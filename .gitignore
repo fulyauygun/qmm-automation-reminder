@@ -17,3 +17,6 @@ build/
 
 # Excel temp/lock files
 ~$*.xlsx
+
+# Generated status page
+rapor/
