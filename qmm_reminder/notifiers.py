@@ -79,6 +79,42 @@ class TeamsWebhookNotifier:
 
         _with_retries(_post, f"Teams webhook ({p.document.title}, {p.kind})")
 
+    def send_text(self, title: str, text: str) -> None:
+        """Plain notice card - used to surface tool failures in the channel
+        so a broken scheduled run never goes unnoticed."""
+        payload = {
+            "type": "message",
+            "attachments": [
+                {
+                    "contentType": "application/vnd.microsoft.card.adaptive",
+                    "content": {
+                        "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+                        "type": "AdaptiveCard",
+                        "version": "1.4",
+                        "body": [
+                            {
+                                "type": "TextBlock",
+                                "text": title,
+                                "weight": "Bolder",
+                                "color": "Attention",
+                                "wrap": True,
+                            },
+                            {"type": "TextBlock", "text": text, "wrap": True},
+                        ],
+                    },
+                }
+            ],
+        }
+
+        def _post():
+            resp = requests.post(
+                self._url, json=payload, timeout=_TIMEOUT, verify=self._verify
+            )
+            if resp.status_code >= 300:
+                raise RuntimeError(f"HTTP {resp.status_code}: {resp.text[:200]}")
+
+        _with_retries(_post, f"Teams webhook (notice: {title})")
+
     @staticmethod
     def _card(p: PlannedNotification) -> dict:
         return {

@@ -163,10 +163,28 @@ def main(argv: list[str] | None = None) -> int:
         return run(cfg, today, args.dry_run)
     except (ConfigError, ExcelReadError) as exc:
         log.error("%s", exc)
+        _report_failure(cfg, str(exc), dry_run=args.dry_run)
         return 2
-    except Exception:
+    except Exception as exc:
         log.exception("Unexpected error")
+        _report_failure(cfg, f"{type(exc).__name__}: {exc}", dry_run=args.dry_run)
         return 2
+
+
+def _report_failure(cfg: Config, message: str, dry_run: bool) -> None:
+    """Best effort: surface a broken run in the Teams channel so the team
+    notices even when nobody reads the log files. Never raises."""
+    if dry_run or not cfg.teams.enabled:
+        return
+    try:
+        TeamsWebhookNotifier(cfg.teams, cfg.ca_bundle).send_text(
+            "🔴 QMM hatırlatma otomasyonu ÇALIŞAMADI",
+            "Bugünkü kontrol tamamlanamadı, hatırlatmalar gönderilemedi. "
+            f"Hata: {message} — Lütfen log dosyasını kontrol edin "
+            "(kurulum klasörü altında logs\\qmm_reminder.log).",
+        )
+    except Exception as exc:  # noqa: BLE001 - reporting must never crash
+        log.error("Failure notice could not be sent to Teams: %s", exc)
 
 
 if __name__ == "__main__":

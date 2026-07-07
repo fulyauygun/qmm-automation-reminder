@@ -11,7 +11,10 @@ Everything runs locally on a Windows PC inside the company network. The
 Excel file is opened read-only in place — it is never copied, uploaded or
 sent to any external service. See
 [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the full technology
-decision record and security design.
+decision record and security design, and
+[`docs/DEVIR_TALIMATI.md`](docs/DEVIR_TALIMATI.md) for the Turkish
+handover & operations guide written for the QMM team (day-to-day usage,
+health checks, troubleshooting, handover checklist).
 
 ## How it works
 
