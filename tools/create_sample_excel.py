@@ -74,6 +74,16 @@ def build(path: Path, today: date | None = None) -> None:
     for r in range(2, len(rows) + 2):
         ws.cell(row=r, column=3).number_format = "DD.MM.YYYY"
         ws.cell(row=r, column=6).number_format = "DD.MM.YYYY"
+
+    # Self-service e-mail recipient sheet maintained by the QMM team.
+    rcp = wb.create_sheet("Bildirim Alıcıları")
+    rcp.append(["Ad", "E-posta", "Aktif"])
+    rcp.append(["Süreç Lideri (kurgusal)", "surec.lideri@example.com", "Evet"])
+    rcp.append(["QMM Ekibi (kurgusal)", "qmm.ekibi@example.com", ""])
+    rcp.append(["Eski Çalışan (kurgusal)", "ayrilan.kisi@example.com", "Hayır"])
+    for col, width in zip("ABC", (26, 30, 8)):
+        rcp.column_dimensions[col].width = width
+
     path.parent.mkdir(parents=True, exist_ok=True)
     wb.save(path)
     print(f"Sample file written: {path}")

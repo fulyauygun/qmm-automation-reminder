@@ -88,8 +88,20 @@ All settings live in `config.yaml` (git-ignored; see the commented
 `config.example.yaml`): Excel path and column headers, milestone days,
 overdue repeat interval, notification channels. An SMTP e-mail channel is
 included but disabled by default — set `notifications.email.enabled: true`
-and the process leader's address under `recipients` to also send e-mails
-via the internal relay.
+to also send e-mails via the internal relay.
+
+### Self-service recipient management (no IT needed)
+
+Both channels are designed so the QMM team manages recipients **without
+touching config or code** after handover:
+
+* **Teams:** whoever is a member of the notification channel sees the
+  cards — adding a person to the channel *is* the recipient management.
+* **E-mail:** addresses live in a worksheet named **"Bildirim
+  Alıcıları"** inside the control-list workbook itself (columns: `Ad`,
+  `E-posta`, `Aktif`). Adding a row adds a recipient on the next run;
+  writing `Hayır` in `Aktif` disables one without deleting it. Invalid
+  addresses are skipped with a log warning and never break the run.
 
 ## Operations
 

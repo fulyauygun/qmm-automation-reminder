@@ -63,8 +63,13 @@ notifications:
     username_env: "QMM_SMTP_USER"
     password_env: "QMM_SMTP_PASSWORD"
     from_address: "qmm-reminder@example.com"
-    recipients:
-      - "process.leader@example.com"
+    # Fixed addresses (optional if recipients_sheet is set).
+    recipients: []
+    # Self-service recipient list: a worksheet with this name inside the
+    # control-list workbook. Columns: "E-posta" (required), "Aktif"
+    # (optional; "Hayır" disables a row), "Ad" (optional, for readability).
+    # The QMM team adds/removes addresses there without touching this file.
+    recipients_sheet: "Bildirim Alıcıları"
 
   # Path to the corporate CA bundle (PEM) if HTTPS traffic is intercepted
   # by a corporate proxy; null = system default certificates.

@@ -5,7 +5,12 @@ import pytest
 from openpyxl import Workbook
 
 from qmm_reminder.config import ExcelConfig
-from qmm_reminder.excel_reader import ExcelReadError, add_years, read_documents
+from qmm_reminder.excel_reader import (
+    ExcelReadError,
+    add_years,
+    read_documents,
+    read_recipients,
+)
 
 HEADERS = [
     "Bölüm",
@@ -128,3 +133,44 @@ def test_missing_file_raises(tmp_path: Path):
 def test_add_years():
     assert add_years(date(2023, 8, 1), 3) == date(2026, 8, 1)
     assert add_years(date(2024, 2, 29), 3) == date(2027, 2, 28)
+
+
+def write_recipients_sheet(path: Path, rows, headers=("Ad", "E-posta", "Aktif")):
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Bildirim Alıcıları"
+    ws.append(list(headers))
+    for r in rows:
+        ws.append(r)
+    wb.save(path)
+
+
+def test_recipients_active_invalid_and_duplicates(tmp_path: Path):
+    f = tmp_path / "r.xlsx"
+    write_recipients_sheet(f, [
+        ["Lider", "lider@example.com", "Evet"],
+        ["Ekip", "ekip@example.com", ""],           # empty flag = active
+        ["Ayrılan", "eski@example.com", "Hayır"],   # deactivated
+        ["Bozuk", "adres-degil", ""],               # invalid -> warning
+        ["Tekrar", "LIDER@example.com", "Evet"],    # duplicate, different case
+        ["Boş", None, ""],                          # skipped silently
+    ])
+    emails, warnings = read_recipients(f, "Bildirim Alıcıları")
+    assert emails == ["lider@example.com", "ekip@example.com"]
+    assert len(warnings) == 1 and "adres-degil" in warnings[0]
+
+
+def test_recipients_missing_sheet_is_warning(tmp_path: Path):
+    f = tmp_path / "r.xlsx"
+    write_recipients_sheet(f, [])
+    emails, warnings = read_recipients(f, "Alıcılar")
+    assert emails == []
+    assert len(warnings) == 1 and "Alıcılar" in warnings[0]
+
+
+def test_recipients_sheet_name_case_insensitive(tmp_path: Path):
+    f = tmp_path / "r.xlsx"
+    write_recipients_sheet(f, [["Lider", "lider@example.com", "Evet"]])
+    emails, warnings = read_recipients(f, "bildirim alıcıları")
+    assert emails == ["lider@example.com"]
+    assert warnings == []

@@ -112,18 +112,19 @@ class SmtpNotifier:
 
     name = "email"
 
-    def __init__(self, cfg: EmailConfig):
+    def __init__(self, cfg: EmailConfig, recipients: list[str] | None = None):
         self._cfg = cfg
+        self._recipients = recipients if recipients is not None else cfg.recipients
 
     @property
     def recipient(self) -> str:
-        return ", ".join(self._cfg.recipients)
+        return ", ".join(self._recipients)
 
     def send(self, p: PlannedNotification) -> None:
         msg = EmailMessage()
         msg["Subject"] = f"{title_for(p)} – {p.document.title}"
         msg["From"] = self._cfg.from_address
-        msg["To"] = ", ".join(self._cfg.recipients)
+        msg["To"] = ", ".join(self._recipients)
         msg.set_content(plain_text_for(p))
 
         def _send():

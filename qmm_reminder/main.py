@@ -23,7 +23,7 @@ from pathlib import Path
 from . import __version__
 from .config import Config, ConfigError, load_config
 from .engine import plan_run
-from .excel_reader import ExcelReadError, read_documents
+from .excel_reader import ExcelReadError, read_documents, read_recipients
 from .notifiers import NotificationError, SmtpNotifier, TeamsWebhookNotifier
 from .state import StateStore
 
@@ -48,12 +48,35 @@ def _setup_logging(log_dir: Path) -> None:
     root.addHandler(console)
 
 
+def _resolve_email_recipients(cfg: Config) -> list[str]:
+    """Static config recipients plus the team-maintained Excel sheet."""
+    recipients = list(cfg.email.recipients)
+    if cfg.email.recipients_sheet:
+        extra, warnings = read_recipients(
+            Path(cfg.excel.path), cfg.email.recipients_sheet
+        )
+        for w in warnings:
+            log.warning("%s", w)
+        seen = {r.casefold() for r in recipients}
+        recipients += [e for e in extra if e.casefold() not in seen]
+    return recipients
+
+
 def _build_notifiers(cfg: Config) -> list:
     notifiers = []
     if cfg.teams.enabled:
         notifiers.append(TeamsWebhookNotifier(cfg.teams, cfg.ca_bundle))
     if cfg.email.enabled:
-        notifiers.append(SmtpNotifier(cfg.email))
+        recipients = _resolve_email_recipients(cfg)
+        if recipients:
+            log.info("E-mail recipients: %d address(es)", len(recipients))
+            notifiers.append(SmtpNotifier(cfg.email, recipients))
+        else:
+            log.error(
+                "E-mail channel enabled but no recipients found (config list"
+                " empty and sheet %r yielded none) - e-mail sending skipped",
+                cfg.email.recipients_sheet,
+            )
     return notifiers
 
 

@@ -67,6 +67,10 @@ class EmailConfig:
     password_env: str
     from_address: str
     recipients: list[str]
+    # Worksheet in the control-list workbook that the QMM team maintains
+    # themselves ("E-posta" + optional "Aktif" columns); merged with the
+    # static list above on every run.
+    recipients_sheet: str | None
 
     def resolve_credentials(self) -> tuple[str | None, str | None]:
         user = os.environ.get(self.username_env or "", "").strip() or None
@@ -158,10 +162,14 @@ def load_config(path: str | Path) -> Config:
         password_env=str(email_raw.get("password_env", "")),
         from_address=str(email_raw.get("from_address", "")),
         recipients=[str(r) for r in (email_raw.get("recipients") or [])],
+        recipients_sheet=email_raw.get("recipients_sheet") or None,
     )
-    if email.enabled and (not email.smtp_host or not email.recipients):
+    if email.enabled and not email.smtp_host:
+        raise ConfigError("notifications.email is enabled but smtp_host missing")
+    if email.enabled and not email.recipients and not email.recipients_sheet:
         raise ConfigError(
-            "notifications.email is enabled but smtp_host or recipients missing"
+            "notifications.email is enabled but neither recipients nor"
+            " recipients_sheet is configured"
         )
     if not teams.enabled and not email.enabled:
         raise ConfigError("At least one notification channel must be enabled")

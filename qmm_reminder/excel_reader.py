@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import hashlib
 import logging
+import re
 from datetime import date, datetime
 from pathlib import Path
 
@@ -160,5 +161,78 @@ def read_documents(
                 )
             )
         return documents, warnings
+    finally:
+        wb.close()
+
+
+_EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+_EMAIL_HEADERS = {"e-posta", "eposta", "e-mail", "email", "mail"}
+_ACTIVE_HEADERS = {"aktif", "active"}
+_INACTIVE_VALUES = {"hayır", "hayir", "no", "0", "false", "pasif"}
+
+
+def read_recipients(path: Path, sheet_name: str) -> tuple[list[str], list[str]]:
+    """Read notification e-mail addresses from a worksheet.
+
+    The sheet is maintained by the QMM team directly in Excel: one row per
+    person, an "E-posta" column (required) and an optional "Aktif" column
+    ("Hayır" disables a row without deleting it). Returns
+    (addresses, warnings); a missing sheet is a warning, not a crash, so a
+    broken recipients list never stops the Teams notifications.
+    """
+    if not path.is_file():
+        return [], [f"Recipients: Excel file not found: {path}"]
+    wb = load_workbook(path, read_only=True, data_only=True)
+    try:
+        actual = next(
+            (n for n in wb.sheetnames if _normalize(n) == _normalize(sheet_name)),
+            None,
+        )
+        if actual is None:
+            return [], [
+                f"Recipients sheet {sheet_name!r} not found in {path.name}"
+                f" (sheets: {wb.sheetnames})"
+            ]
+        ws = wb[actual]
+
+        email_col = active_col = header_row = None
+        for row_no, row in enumerate(
+            ws.iter_rows(min_row=1, max_row=_HEADER_SCAN_ROWS), start=1
+        ):
+            for pos, cell in enumerate(row):
+                header = _normalize(cell.value) if cell.value else ""
+                if header in _EMAIL_HEADERS:
+                    email_col, header_row = pos, row_no
+                elif header in _ACTIVE_HEADERS:
+                    active_col = pos
+            if email_col is not None:
+                break
+        if email_col is None:
+            return [], [
+                f"Recipients sheet {actual!r}: no 'E-posta' header found"
+            ]
+
+        emails: list[str] = []
+        warnings: list[str] = []
+        for row_no, row in enumerate(
+            ws.iter_rows(min_row=header_row + 1), start=header_row + 1
+        ):
+            value = row[email_col].value if email_col < len(row) else None
+            if value in (None, ""):
+                continue
+            if active_col is not None and active_col < len(row):
+                flag = _normalize(row[active_col].value or "")
+                if flag in _INACTIVE_VALUES:
+                    continue
+            email = str(value).strip()
+            if not _EMAIL_RE.match(email):
+                warnings.append(
+                    f"Recipients sheet row {row_no}: invalid address"
+                    f" {email!r} - skipped"
+                )
+                continue
+            if email.casefold() not in {e.casefold() for e in emails}:
+                emails.append(email)
+        return emails, warnings
     finally:
         wb.close()
