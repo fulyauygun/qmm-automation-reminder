@@ -148,29 +148,32 @@ def write_recipients_sheet(path: Path, rows, headers=("Ad", "E-posta", "Aktif"))
 def test_recipients_active_invalid_and_duplicates(tmp_path: Path):
     f = tmp_path / "r.xlsx"
     write_recipients_sheet(f, [
-        ["Lider", "lider@example.com", "Evet"],
-        ["Ekip", "ekip@example.com", ""],           # empty flag = active
-        ["Ayrılan", "eski@example.com", "Hayır"],   # deactivated
-        ["Bozuk", "adres-degil", ""],               # invalid -> warning
-        ["Tekrar", "LIDER@example.com", "Evet"],    # duplicate, different case
-        ["Boş", None, ""],                          # skipped silently
+        ["Çağlar Yılmaz", "caglar@example.com", "Evet"],
+        ["", "ekip@example.com", ""],                 # no name -> local part
+        ["Ayrılan", "eski@example.com", "Hayır"],     # deactivated
+        ["Bozuk", "adres-degil", ""],                 # invalid -> warning
+        ["Tekrar", "CAGLAR@example.com", "Evet"],     # duplicate, other case
+        ["Boş", None, ""],                            # skipped silently
     ])
-    emails, warnings = read_recipients(f, "Bildirim Alıcıları")
-    assert emails == ["lider@example.com", "ekip@example.com"]
+    people, warnings = read_recipients(f, "Bildirim Alıcıları")
+    assert people == [
+        ("Çağlar Yılmaz", "caglar@example.com"),
+        ("ekip", "ekip@example.com"),
+    ]
     assert len(warnings) == 1 and "adres-degil" in warnings[0]
 
 
 def test_recipients_missing_sheet_is_warning(tmp_path: Path):
     f = tmp_path / "r.xlsx"
     write_recipients_sheet(f, [])
-    emails, warnings = read_recipients(f, "Alıcılar")
-    assert emails == []
+    people, warnings = read_recipients(f, "Alıcılar")
+    assert people == []
     assert len(warnings) == 1 and "Alıcılar" in warnings[0]
 
 
 def test_recipients_sheet_name_case_insensitive(tmp_path: Path):
     f = tmp_path / "r.xlsx"
     write_recipients_sheet(f, [["Lider", "lider@example.com", "Evet"]])
-    emails, warnings = read_recipients(f, "bildirim alıcıları")
-    assert emails == ["lider@example.com"]
+    people, warnings = read_recipients(f, "bildirim alıcıları")
+    assert people == [("Lider", "lider@example.com")]
     assert warnings == []

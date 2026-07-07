@@ -106,13 +106,18 @@ to also send e-mails via the internal relay.
 Both channels are designed so the QMM team manages recipients **without
 touching config or code** after handover:
 
-* **Teams:** whoever is a member of the notification channel sees the
-  cards — adding a person to the channel *is* the recipient management.
-* **E-mail:** addresses live in a worksheet named **"Bildirim
+* **Recipients sheet:** people live in a worksheet named **"Bildirim
   Alıcıları"** inside the control-list workbook itself (columns: `Ad`,
-  `E-posta`, `Aktif`). Adding a row adds a recipient on the next run;
+  `E-posta`, `Aktif`). Adding a row adds a person on the next run;
   writing `Hayır` in `Aktif` disables one without deleting it. Invalid
   addresses are skipped with a log warning and never break the run.
+* **Teams:** every card **@mentions** the people from the sheet
+  (`mention_recipients: true`), so each of them gets a personal Teams
+  notification — not just a post in the channel. Mentioned people must be
+  members of the team the channel belongs to. Channel membership alone
+  also works: everyone in the channel sees the cards.
+* **E-mail (optional):** the same sheet feeds the SMTP channel when it is
+  enabled; addresses are merged with the static `recipients` list.
 
 ## Operations
 

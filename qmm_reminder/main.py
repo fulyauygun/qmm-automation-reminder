@@ -49,26 +49,28 @@ def _setup_logging(log_dir: Path) -> None:
     root.addHandler(console)
 
 
-def _resolve_email_recipients(cfg: Config) -> list[str]:
-    """Static config recipients plus the team-maintained Excel sheet."""
-    recipients = list(cfg.email.recipients)
-    if cfg.email.recipients_sheet:
-        extra, warnings = read_recipients(
-            Path(cfg.excel.path), cfg.email.recipients_sheet
-        )
-        for w in warnings:
-            log.warning("%s", w)
-        seen = {r.casefold() for r in recipients}
-        recipients += [e for e in extra if e.casefold() not in seen]
-    return recipients
+def _sheet_recipients(cfg: Config) -> list[tuple[str, str]]:
+    """(name, e-mail) pairs from the team-maintained Excel sheet."""
+    if not cfg.recipients_sheet:
+        return []
+    people, warnings = read_recipients(Path(cfg.excel.path), cfg.recipients_sheet)
+    for w in warnings:
+        log.warning("%s", w)
+    return people
 
 
 def _build_notifiers(cfg: Config) -> list:
+    people = _sheet_recipients(cfg)
     notifiers = []
     if cfg.teams.enabled:
-        notifiers.append(TeamsWebhookNotifier(cfg.teams, cfg.ca_bundle))
+        mentions = people if cfg.teams.mention_recipients else []
+        if mentions:
+            log.info("Teams cards will mention %d person(s)", len(mentions))
+        notifiers.append(TeamsWebhookNotifier(cfg.teams, cfg.ca_bundle, mentions))
     if cfg.email.enabled:
-        recipients = _resolve_email_recipients(cfg)
+        recipients = list(cfg.email.recipients)
+        seen = {r.casefold() for r in recipients}
+        recipients += [e for _, e in people if e.casefold() not in seen]
         if recipients:
             log.info("E-mail recipients: %d address(es)", len(recipients))
             notifiers.append(SmtpNotifier(cfg.email, recipients))
@@ -76,7 +78,7 @@ def _build_notifiers(cfg: Config) -> list:
             log.error(
                 "E-mail channel enabled but no recipients found (config list"
                 " empty and sheet %r yielded none) - e-mail sending skipped",
-                cfg.email.recipients_sheet,
+                cfg.recipients_sheet,
             )
     return notifiers
 
@@ -187,7 +189,13 @@ def _report_failure(cfg: Config, message: str, dry_run: bool) -> None:
     if dry_run or not cfg.teams.enabled:
         return
     try:
-        TeamsWebhookNotifier(cfg.teams, cfg.ca_bundle).send_text(
+        mentions = []
+        if cfg.teams.mention_recipients:
+            try:
+                mentions = _sheet_recipients(cfg)
+            except Exception:  # noqa: BLE001 - Excel may be the broken part
+                mentions = []
+        TeamsWebhookNotifier(cfg.teams, cfg.ca_bundle, mentions).send_text(
             "🔴 QMM hatırlatma otomasyonu ÇALIŞAMADI",
             "Bugünkü kontrol tamamlanamadı, hatırlatmalar gönderilemedi. "
             f"Hata: {message} — Lütfen log dosyasını kontrol edin "

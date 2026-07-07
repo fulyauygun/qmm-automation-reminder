@@ -17,9 +17,10 @@ yüklenmez.
 |---|---|
 | Bir talimat revize edildi | Excel'de satırın **Revizyon Tarihi** ve **güncellenme tarihi** alanlarını güncelleyin — hatırlatmalar otomatik olarak yeni tarihe göre yeniden kurulur |
 | Yeni talimat eklendi | Excel'e yeni satır ekleyin, başka işlem gerekmez |
-| Birine e-posta da gitsin | Excel'deki **"Bildirim Alıcıları"** sayfasına ad + e-posta satırı ekleyin |
+| Yeni biri kişisel bildirim alsın | Excel'deki **"Bildirim Alıcıları"** sayfasına ad + e-posta satırı ekleyin — ertesi sabahtan itibaren Teams kartlarında adıyla etiketlenir (@bahsetme) ve kişisel bildirim alır. Kişinin ilgili Teams ekibine üye olması gerekir |
 | Birine artık gitmesin | Aynı sayfada o kişinin **Aktif** sütununa `Hayır` yazın |
-| Teams kartlarını yeni biri görsün | Kişiyi ilgili Teams kanalına ekleyin — başka işlem yok |
+| Teams kartlarını yeni biri sadece görsün | Kişiyi ilgili Teams kanalına ekleyin — başka işlem yok |
+| E-posta da gitsin (kanal açıksa) | Aynı "Bildirim Alıcıları" sayfası e-posta kanalını da besler; ayrı liste tutulmaz |
 | Hatırlatma günlerini değiştirmek | Kurulum klasöründeki `config.yaml` → `milestones_days` satırı (örn. `[30, 15, 7, 1]`) |
 | Genel durumu görsel olarak görmek | Kurulum klasöründeki `rapor\index.html` dosyasını tarayıcıda açın — özet sayılar ve talimat tablosu her sabah otomatik yenilenir. Bu dosyayı şirket dışına/İnternet'e koymayın |
 

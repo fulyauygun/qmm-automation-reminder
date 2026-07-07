@@ -39,6 +39,9 @@ class TeamsConfig:
     enabled: bool
     webhook_url_env: str
     webhook_url_file: str | None
+    # @mention the people from the recipients sheet in every card, so they
+    # get a personal Teams notification instead of only a channel post.
+    mention_recipients: bool
 
     def resolve_webhook_url(self) -> str:
         url = os.environ.get(self.webhook_url_env, "").strip()
@@ -67,10 +70,6 @@ class EmailConfig:
     password_env: str
     from_address: str
     recipients: list[str]
-    # Worksheet in the control-list workbook that the QMM team maintains
-    # themselves ("E-posta" + optional "Aktif" columns); merged with the
-    # static list above on every run.
-    recipients_sheet: str | None
 
     def resolve_credentials(self) -> tuple[str | None, str | None]:
         user = os.environ.get(self.username_env or "", "").strip() or None
@@ -92,6 +91,10 @@ class Config:
     reminders: ReminderConfig
     teams: TeamsConfig
     email: EmailConfig
+    # Worksheet in the control-list workbook that the QMM team maintains
+    # themselves ("Ad" / "E-posta" / "Aktif" columns). Feeds Teams
+    # mentions and, when enabled, the e-mail channel.
+    recipients_sheet: str | None
     ca_bundle: str | None
     storage: StorageConfig
     base_dir: Path = field(default_factory=Path.cwd)
@@ -153,6 +156,7 @@ def load_config(path: str | Path) -> Config:
         enabled=bool(teams_raw.get("enabled", False)),
         webhook_url_env=str(teams_raw.get("webhook_url_env", "QMM_TEAMS_WEBHOOK_URL")),
         webhook_url_file=teams_raw.get("webhook_url_file") or None,
+        mention_recipients=bool(teams_raw.get("mention_recipients", True)),
     )
     email_raw = notif_raw.get("email") or {}
     email = EmailConfig(
@@ -164,14 +168,20 @@ def load_config(path: str | Path) -> Config:
         password_env=str(email_raw.get("password_env", "")),
         from_address=str(email_raw.get("from_address", "")),
         recipients=[str(r) for r in (email_raw.get("recipients") or [])],
-        recipients_sheet=email_raw.get("recipients_sheet") or None,
+    )
+    # Accept the sheet name at notifications level (current) or nested
+    # under email (earlier layout).
+    recipients_sheet = (
+        notif_raw.get("recipients_sheet")
+        or email_raw.get("recipients_sheet")
+        or None
     )
     if email.enabled and not email.smtp_host:
         raise ConfigError("notifications.email is enabled but smtp_host missing")
-    if email.enabled and not email.recipients and not email.recipients_sheet:
+    if email.enabled and not email.recipients and not recipients_sheet:
         raise ConfigError(
             "notifications.email is enabled but neither recipients nor"
-            " recipients_sheet is configured"
+            " notifications.recipients_sheet is configured"
         )
     if not teams.enabled and not email.enabled:
         raise ConfigError("At least one notification channel must be enabled")
@@ -194,6 +204,7 @@ def load_config(path: str | Path) -> Config:
         reminders=reminders,
         teams=teams,
         email=email,
+        recipients_sheet=recipients_sheet,
         ca_bundle=notif_raw.get("ca_bundle") or None,
         storage=storage,
         base_dir=base_dir,

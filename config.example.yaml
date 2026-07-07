@@ -42,6 +42,13 @@ reminders:
   validity_years: 3
 
 notifications:
+  # Self-service recipient list: a worksheet with this name inside the
+  # control-list workbook. Columns: "E-posta" (required), "Ad" (optional,
+  # used for Teams mentions), "Aktif" (optional; "Hayır" disables a row).
+  # The QMM team adds/removes people there without touching this file.
+  # Feeds Teams @mentions and, when enabled, the e-mail channel.
+  recipients_sheet: "Bildirim Alıcıları"
+
   teams:
     enabled: true
     # Name of the environment variable holding the Teams webhook URL
@@ -52,6 +59,10 @@ notifications:
     # URL. Protect the file with NTFS permissions (only the service user).
     # Used only if the environment variable is not set.
     webhook_url_file: null
+    # @mention the people from recipients_sheet in every card, so each of
+    # them gets a personal Teams notification (they must be members of the
+    # team the channel belongs to).
+    mention_recipients: true
 
   email:
     enabled: false
@@ -63,13 +74,9 @@ notifications:
     username_env: "QMM_SMTP_USER"
     password_env: "QMM_SMTP_PASSWORD"
     from_address: "qmm-reminder@example.com"
-    # Fixed addresses (optional if recipients_sheet is set).
+    # Fixed addresses (optional if recipients_sheet above is set;
+    # sheet addresses and this list are merged).
     recipients: []
-    # Self-service recipient list: a worksheet with this name inside the
-    # control-list workbook. Columns: "E-posta" (required), "Aktif"
-    # (optional; "Hayır" disables a row), "Ad" (optional, for readability).
-    # The QMM team adds/removes addresses there without touching this file.
-    recipients_sheet: "Bildirim Alıcıları"
 
   # Path to the corporate CA bundle (PEM) if HTTPS traffic is intercepted
   # by a corporate proxy; null = system default certificates.
