@@ -57,6 +57,9 @@ run_qmm_reminder.bat ──► py -3 -m qmm_reminder --config config.yaml
         ├── engine.py        pure date logic: which reminder is due today?
         ├── state.py         SQLite: sent_reminders (duplicate prevention)
         ├── notifiers.py     TeamsWebhookNotifier / SmtpNotifier (pluggable)
+        ├── report.py        static HTML status page (rapor/index.html,
+        │                    stays on the internal share - never hosted
+        │                    externally)
         └── logs/            rotating qmm_reminder.log
         
 Outbound traffic: exactly one HTTPS POST per notification,

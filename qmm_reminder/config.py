@@ -82,6 +82,8 @@ class EmailConfig:
 class StorageConfig:
     state_db: Path
     log_dir: Path
+    # Static HTML status page rewritten on every run; None disables it.
+    report: Path | None
 
 
 @dataclass
@@ -180,9 +182,11 @@ def load_config(path: str | Path) -> Config:
         candidate = Path(p)
         return candidate if candidate.is_absolute() else base_dir / candidate
 
+    report_raw = storage_raw.get("report", "rapor/index.html")
     storage = StorageConfig(
         state_db=_resolve(str(storage_raw.get("state_db", "state/qmm_reminder.db"))),
         log_dir=_resolve(str(storage_raw.get("log_dir", "logs"))),
+        report=_resolve(str(report_raw)) if report_raw else None,
     )
 
     return Config(

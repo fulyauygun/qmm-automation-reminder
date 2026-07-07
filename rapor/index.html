@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>QMM Talimat Durum Sayfası</title>
+<style>
+  :root {
+    --bg: #fcfcfb; --ink: #21252c; --ink-soft: #5c6472; --line: #e3e4e0;
+    --panel: #ffffff;
+    --good: #0ca30c; --warning: #fab219; --serious: #ec835a; --critical: #d03b3b;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1a1a19; --ink: #e8e8e5; --ink-soft: #a0a29d; --line: #33342f;
+      --panel: #222320;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 2rem 1.25rem 3rem;
+    background: var(--bg); color: var(--ink);
+    font-family: "Segoe UI", system-ui, sans-serif; line-height: 1.5;
+  }
+  main { max-width: 1060px; margin: 0 auto; }
+  h1 { font-size: 1.35rem; margin: 0 0 .2rem; }
+  .sub { color: var(--ink-soft); font-size: .85rem; margin: 0 0 1.6rem; }
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+           gap: .8rem; margin-bottom: 1.8rem; }
+  .tile { background: var(--panel); border: 1px solid var(--line);
+          border-radius: 8px; padding: .85rem 1rem; }
+  .tile-num { font-size: 1.9rem; font-weight: 650; line-height: 1.15;
+              font-variant-numeric: tabular-nums; }
+  .tile-label { font-size: .78rem; color: var(--ink-soft); }
+  .t-critical .tile-num { color: var(--critical); }
+  .t-serious  .tile-num { color: var(--serious); }
+  .t-warning  .tile-num { color: var(--warning); }
+  .t-good     .tile-num { color: var(--good); }
+  .tbl { overflow-x: auto; background: var(--panel);
+         border: 1px solid var(--line); border-radius: 8px; }
+  table { border-collapse: collapse; width: 100%; font-size: .84rem; }
+  th, td { text-align: left; padding: .5rem .8rem; white-space: nowrap; }
+  th { font-size: .68rem; text-transform: uppercase; letter-spacing: .06em;
+       color: var(--ink-soft); border-bottom: 1px solid var(--line); }
+  td { border-bottom: 1px solid var(--line); }
+  tr:last-child td { border-bottom: none; }
+  td.num { font-variant-numeric: tabular-nums; }
+  .st { display: inline-flex; align-items: center; gap: .35em;
+        font-size: .76rem; font-weight: 600; }
+  .st .ic { font-size: .8em; }
+  .st-critical { color: var(--critical); }
+  .st-serious  { color: var(--serious); }
+  .st-warning  { color: var(--warning); }
+  .st-good     { color: var(--good); }
+  @media (prefers-color-scheme: light) {
+    /* warning/serious are sub-3:1 on light by design; the icon+label pair
+       carries the meaning, and the label ink stays readable */
+    .st-warning, .st-serious { color: var(--ink); }
+    .st-warning .ic { color: var(--warning); }
+    .st-serious .ic { color: var(--serious); }
+  }
+  footer { margin-top: 1.4rem; color: var(--ink-soft); font-size: .76rem;
+           max-width: 72ch; }
+</style>
+</head>
+<body>
+<main>
+  <h1>QMM Çalışma Talimatları – Geçerlilik Durumu</h1>
+  <p class="sub">Kaynak: QMM Working Instructions Control List.xlsx · Oluşturulma: 07.07.2026 16:15 ·
+  Bu sayfa her sabah otomatik yenilenir.</p>
+  <div class="tiles"><div class='tile t-critical'><div class='tile-num'>1</div><div class='tile-label'><span class='ic'>⛔</span> Süresi doldu</div></div><div class='tile t-serious'><div class='tile-num'>3</div><div class='tile-label'><span class='ic'>▲</span> Kritik – 7 gün içinde</div></div><div class='tile t-warning'><div class='tile-num'>3</div><div class='tile-label'><span class='ic'>●</span> Yaklaşıyor – 30 gün içinde</div></div><div class='tile t-good'><div class='tile-num'>2</div><div class='tile-label'><span class='ic'>✓</span> Güncel</div></div></div>
+  <div class="tbl">
+    <table>
+      <thead><tr>
+        <th>Doküman</th><th>Bölüm</th><th>Rev. No</th><th>Hazırlayan</th>
+        <th>Son Revizyon</th><th>Son Geçerlilik</th><th>Kalan Süre</th><th>Durum</th>
+      </tr></thead>
+      <tbody><tr><td>QMM-TL-007-ONAY</td><td>Kalite Güvence</td><td class='num'>03</td><td>A. Yılmaz</td><td class='num'>27.06.2023</td><td class='num'>27.06.2026</td><td class='num'>10 gün geçti</td><td><span class='st st-critical'><span class='ic'>⛔</span>Süresi doldu</span></td></tr><tr><td>QMM-TL-006-ONAY</td><td>Bakım</td><td class='num'>02</td><td>B. Demir</td><td class='num'>07.07.2023</td><td class='num'>07.07.2026</td><td class='num'>bugün</td><td><span class='st st-serious'><span class='ic'>▲</span>Kritik – 7 gün içinde</span></td></tr><tr><td>QMM-TL-005-ONAY</td><td>Kalite Kontrol</td><td class='num'>01</td><td>A. Yılmaz</td><td class='num'>08.07.2023</td><td class='num'>08.07.2026</td><td class='num'>1 gün</td><td><span class='st st-serious'><span class='ic'>▲</span>Kritik – 7 gün içinde</span></td></tr><tr><td>QMM-TL-004-ONAY</td><td>Lojistik</td><td class='num'>00</td><td>B. Demir</td><td class='num'>14.07.2023</td><td class='num'>14.07.2026</td><td class='num'>7 gün</td><td><span class='st st-serious'><span class='ic'>▲</span>Kritik – 7 gün içinde</span></td></tr><tr><td>QMM-TL-003-ONAY</td><td>Üretim</td><td class='num'>03</td><td>A. Yılmaz</td><td class='num'>21.07.2023</td><td class='num'>21.07.2026</td><td class='num'>14 gün</td><td><span class='st st-warning'><span class='ic'>●</span>Yaklaşıyor – 30 gün içinde</span></td></tr><tr><td>QMM-TL-009-ONAY</td><td>İnsan Kaynakları</td><td class='num'>01</td><td>C. Kaya</td><td class='num'>27.07.2023</td><td class='num'>27.07.2026</td><td class='num'>20 gün</td><td><span class='st st-warning'><span class='ic'>●</span>Yaklaşıyor – 30 gün içinde</span></td></tr><tr><td>QMM-TL-002-ONAY</td><td>Üretim</td><td class='num'>02</td><td>B. Demir</td><td class='num'>06.08.2023</td><td class='num'>06.08.2026</td><td class='num'>30 gün</td><td><span class='st st-warning'><span class='ic'>●</span>Yaklaşıyor – 30 gün içinde</span></td></tr><tr><td>QMM-TL-001-ONAY</td><td>Kalite Güvence</td><td class='num'>01</td><td>A. Yılmaz</td><td class='num'>21.08.2023</td><td class='num'>21.08.2026</td><td class='num'>45 gün</td><td><span class='st st-good'><span class='ic'>✓</span>Güncel</span></td></tr><tr><td>QMM-TL-008-ONAY</td><td>Ar-Ge</td><td class='num'>00</td><td>B. Demir</td><td class='num'>23.01.2024</td><td class='num'>23.01.2027</td><td class='num'>200 gün</td><td><span class='st st-good'><span class='ic'>✓</span>Güncel</span></td></tr></tbody>
+    </table>
+  </div>
+  <footer>Bu sayfa QMM hatırlatma otomasyonu tarafından üretilir; yalnızca şirket
+  ağındaki bu klasörde durur, hiçbir dış sisteme yüklenmez. Gizli “Revizyon
+  İçeriği” alanı bu sayfada yer almaz.</footer>
+</main>
+</body>
+</html>

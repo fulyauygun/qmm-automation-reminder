@@ -24,6 +24,7 @@ Task Scheduler (daily) ─► run_qmm_reminder.bat ─► py -3 -m qmm_reminder
     decides which reminders are due today          (engine.py)
     posts Adaptive Cards to Teams webhook          (notifiers.py)
     records sent reminders in local SQLite         (state.py)
+    rewrites the HTML status page                  (report.py -> rapor/)
     writes rotating log files                      (logs/)
 ```
 
@@ -38,6 +39,13 @@ Key behaviors:
   (configurable) until the row is updated.
 * **Data minimization** — the `Revizyon İçeriği` column is never read or
   transmitted.
+* **Status page** — every run rewrites a self-contained HTML page
+  (`storage.report`, default `rapor/index.html`) with summary counts and
+  a per-document status table. Point it at a folder on the network share
+  and the team opens it in any browser — no server, no hosting, and the
+  confidential list never leaves the company network. **Do not host this
+  page on external platforms (Vercel, Netlify, GitHub Pages …): it
+  contains internal QM data.**
 
 ## Installation (Windows office PC)
 

@@ -21,6 +21,7 @@ yüklenmez.
 | Birine artık gitmesin | Aynı sayfada o kişinin **Aktif** sütununa `Hayır` yazın |
 | Teams kartlarını yeni biri görsün | Kişiyi ilgili Teams kanalına ekleyin — başka işlem yok |
 | Hatırlatma günlerini değiştirmek | Kurulum klasöründeki `config.yaml` → `milestones_days` satırı (örn. `[30, 15, 7, 1]`) |
+| Genel durumu görsel olarak görmek | Kurulum klasöründeki `rapor\index.html` dosyasını tarayıcıda açın — özet sayılar ve talimat tablosu her sabah otomatik yenilenir. Bu dosyayı şirket dışına/İnternet'e koymayın |
 
 ## Sistem çalışıyor mu? (aylık kontrol önerilir)
 

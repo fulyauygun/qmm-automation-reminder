@@ -25,6 +25,7 @@ from .config import Config, ConfigError, load_config
 from .engine import plan_run
 from .excel_reader import ExcelReadError, read_documents, read_recipients
 from .notifiers import NotificationError, SmtpNotifier, TeamsWebhookNotifier
+from .report import write_report
 from .state import StateStore
 
 log = logging.getLogger("qmm_reminder")
@@ -89,6 +90,15 @@ def run(cfg: Config, today: date, dry_run: bool) -> int:
     for w in warnings:
         log.warning("Excel: %s", w)
     log.info("Read %d document(s) from %s", len(documents), cfg.excel.path)
+
+    if cfg.storage.report:
+        try:
+            write_report(cfg.storage.report, documents, today,
+                         Path(cfg.excel.path).name)
+            log.info("Status page written: %s", cfg.storage.report)
+        except OSError as exc:
+            # A broken status page must never block the reminders.
+            log.warning("Status page could not be written: %s", exc)
 
     with StateStore(cfg.storage.state_db) as state:
         planned = plan_run(
