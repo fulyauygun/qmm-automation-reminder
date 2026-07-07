@@ -68,9 +68,6 @@ def run(cfg: Config, today: date, dry_run: bool) -> int:
     log.info("Read %d document(s) from %s", len(documents), cfg.excel.path)
 
     with StateStore(cfg.storage.state_db) as state:
-        for w in warnings:
-            state.audit(run_id, channel="excel", status="SKIPPED", detail=w)
-
         planned = plan_run(
             documents,
             today,
@@ -85,15 +82,6 @@ def run(cfg: Config, today: date, dry_run: bool) -> int:
                 log.info("[DRY-RUN] would send %s for '%s' (Bölüm: %s, due %s)",
                          p.kind, p.document.title, p.document.section,
                          p.document.due_date)
-                state.audit(
-                    run_id,
-                    doc_id=p.document.doc_id,
-                    title=p.document.title,
-                    section=p.document.section,
-                    due_date=p.document.due_date.isoformat(),
-                    kind=p.kind,
-                    status="DRY-RUN",
-                )
             log.info("Run %s finished (dry run)", run_id)
             return 0
 
@@ -104,24 +92,10 @@ def run(cfg: Config, today: date, dry_run: bool) -> int:
             for notifier in notifiers:
                 try:
                     notifier.send(p)
-                    status, detail = "SENT", ""
                 except NotificationError as exc:
                     all_ok = False
                     failures += 1
-                    status, detail = "FAILED", str(exc)
                     log.error("Send failed: %s", exc)
-                state.audit(
-                    run_id,
-                    doc_id=p.document.doc_id,
-                    title=p.document.title,
-                    section=p.document.section,
-                    due_date=p.document.due_date.isoformat(),
-                    kind=p.kind,
-                    channel=notifier.name,
-                    recipient=notifier.recipient,
-                    status=status,
-                    detail=detail,
-                )
             # Mark as sent only when every enabled channel succeeded, so a
             # failed channel is retried on the next run. A missed reminder
             # is a compliance risk; a repeated one is only noise.

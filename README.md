@@ -20,7 +20,7 @@ Task Scheduler (daily) ─► run_qmm_reminder.bat ─► py -3 -m qmm_reminder
     reads Excel (read-only, network share)
     decides which reminders are due today          (engine.py)
     posts Adaptive Cards to Teams webhook          (notifiers.py)
-    records state + audit trail in local SQLite    (state.py)
+    records sent reminders in local SQLite         (state.py)
     writes rotating log files                      (logs/)
 ```
 
@@ -33,8 +33,6 @@ Key behaviors:
   next run sends only the most imminent missed reminder, never a burst.
 * **Overdue** — after expiry, a red overdue card repeats every 7 days
   (configurable) until the row is updated.
-* **Audit trail** — every notification attempt (SENT / FAILED / DRY-RUN)
-  is stored in `state/qmm_reminder.db`, table `audit_log`.
 * **Data minimization** — the `Revizyon İçeriği` column is never read or
   transmitted.
 
@@ -95,10 +93,8 @@ via the internal relay.
 
 ## Operations
 
-* **Logs:** `logs/qmm_reminder.log` (rotating, UTF-8).
-* **Audit queries:** e.g. everything sent last month:
-  `SELECT ts, title, kind, channel, status FROM audit_log` in
-  `state/qmm_reminder.db` (any SQLite viewer).
+* **Logs:** `logs/qmm_reminder.log` (rotating, UTF-8) — every run, every
+  send and every failure is written here.
 * **Exit codes:** `0` success · `1` at least one send failed (retried
   automatically next run) · `2` configuration or Excel read error.
 * **Rows the tool cannot interpret** (missing dates) are skipped, logged
@@ -119,5 +115,5 @@ Bu araç, QMM çalışma talimatları kontrol listesini her gün ağ
 paylaşımından okur; geçerlilik süresinin dolmasına 30 / 15 / 7 / 1 gün
 kala ve süre dolduktan sonra 7 günde bir, ilgili Teams kanalına Türkçe
 hatırlatma kartı gönderir. Dosya hiçbir dış sisteme yüklenmez; webhook
-adresi ortam değişkeninde saklanır; gönderilen her bildirim denetim
-kaydına (audit log) işlenir. Kurulum ve zamanlama adımları yukarıdadır.
+adresi ortam değişkeninde saklanır; her çalıştırma ve gönderim log
+dosyasına işlenir. Kurulum ve zamanlama adımları yukarıdadır.

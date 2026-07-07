@@ -24,13 +24,3 @@ def test_last_sent_ignores_superseded(tmp_path: Path):
         s.record_sent("d1", DUE, "OVERDUE", now=datetime(2026, 8, 2, 8, 0))
         s.record_sent("d1", DUE, "OVERDUE", now=datetime(2026, 8, 9, 8, 0))
         assert s.last_sent("d1", DUE, "OVERDUE") == date(2026, 8, 9)
-
-
-def test_audit_rows_written(tmp_path: Path):
-    db = tmp_path / "s.db"
-    with StateStore(db) as s:
-        s.audit("run1", doc_id="d1", title="QMM-TL-001", section="Üretim",
-                due_date="2026-08-01", kind="T-7", channel="teams",
-                recipient="teams-channel", status="SENT")
-        cur = s._conn.execute("SELECT run_id, status, channel FROM audit_log")
-        assert cur.fetchall() == [("run1", "SENT", "teams")]

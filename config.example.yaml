@@ -71,7 +71,8 @@ notifications:
   ca_bundle: null
 
 storage:
-  # SQLite database holding sent-reminder state and the audit log.
+  # SQLite database remembering which reminders were already sent
+  # (duplicate prevention).
   state_db: "state/qmm_reminder.db"
   # Directory for rotating log files.
   log_dir: "logs"

@@ -1,14 +1,9 @@
-"""SQLite-backed send state (duplicate prevention) and audit log.
+"""SQLite-backed send state (duplicate prevention).
 
-One small local database file serves two purposes:
-
-* ``sent_reminders`` remembers which reminder was sent for which document
-  and due date, so a reminder is never sent twice. The due date is part of
-  the key: when a document is revised (new due date), all milestones are
-  automatically re-armed.
-* ``audit_log`` records every notification attempt (including failures and
-  dry runs) with timestamp, channel and outcome - the traceability record
-  for QM audits.
+``sent_reminders`` remembers which reminder was sent for which document
+and due date, so a reminder is never sent twice. The due date is part of
+the key: when a document is revised (new due date), all milestones are
+automatically re-armed.
 """
 
 from __future__ import annotations
@@ -25,21 +20,6 @@ CREATE TABLE IF NOT EXISTS sent_reminders (
     status   TEXT NOT NULL,           -- 'sent' or 'superseded'
     sent_at  TEXT NOT NULL,           -- ISO timestamp
     PRIMARY KEY (doc_id, due_date, kind, sent_at)
-);
-
-CREATE TABLE IF NOT EXISTS audit_log (
-    id        INTEGER PRIMARY KEY AUTOINCREMENT,
-    ts        TEXT NOT NULL,
-    run_id    TEXT NOT NULL,
-    doc_id    TEXT,
-    title     TEXT,
-    section   TEXT,
-    due_date  TEXT,
-    kind      TEXT,
-    channel   TEXT,
-    recipient TEXT,
-    status    TEXT,                   -- SENT / FAILED / DRY-RUN / SKIPPED
-    detail    TEXT
 );
 """
 
@@ -103,42 +83,5 @@ class StateStore:
             "INSERT OR IGNORE INTO sent_reminders"
             " (doc_id, due_date, kind, status, sent_at) VALUES (?,?,?,?,?)",
             rows,
-        )
-        self._conn.commit()
-
-    # -- audit trail ------------------------------------------------------
-
-    def audit(
-        self,
-        run_id: str,
-        *,
-        doc_id: str = "",
-        title: str = "",
-        section: str = "",
-        due_date: str = "",
-        kind: str = "",
-        channel: str = "",
-        recipient: str = "",
-        status: str,
-        detail: str = "",
-    ) -> None:
-        self._conn.execute(
-            "INSERT INTO audit_log"
-            " (ts, run_id, doc_id, title, section, due_date, kind, channel,"
-            "  recipient, status, detail)"
-            " VALUES (?,?,?,?,?,?,?,?,?,?,?)",
-            (
-                datetime.now().isoformat(timespec="seconds"),
-                run_id,
-                doc_id,
-                title,
-                section,
-                due_date,
-                kind,
-                channel,
-                recipient,
-                status,
-                detail,
-            ),
         )
         self._conn.commit()

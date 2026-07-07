@@ -19,7 +19,9 @@ Non-functional requirements:
   company network; the Excel file stays on the internal network share.
 * **No hardcoded secrets** — webhook URL / SMTP credentials come from the
   environment, never from code or committed config.
-* **Auditability** — every notification (or failure) must be traceable.
+* **Traceability** — runs, sends and failures are written to a rotating
+  log file. (A structured audit-log table was considered and dropped from
+  scope by QMM decision on 2026-07-07; it can be reinstated later.)
 * **No duplicates** — each milestone fires exactly once per document
   revision cycle.
 * **Successor-proof** — the intern who builds it will leave; the tool must
@@ -38,9 +40,9 @@ Non-functional requirements:
 
 **Decision:** Python 3 (openpyxl, requests, PyYAML — three vetted
 libraries) scheduled by Windows Task Scheduler; Microsoft Teams
-incoming-webhook (Workflows) notifications; SQLite for send-state and
-audit log. SQLite is *not* a migration of the document list — it stores
-only what the tool itself generates.
+incoming-webhook (Workflows) notifications; SQLite for send-state
+(duplicate prevention). SQLite is *not* a migration of the document
+list — it stores only what the tool itself generates.
 
 ## 3. Architecture
 
@@ -53,7 +55,7 @@ run_qmm_reminder.bat ──► py -3 -m qmm_reminder --config config.yaml
         ├── config.py        loads config.yaml (no secrets inside)
         ├── excel_reader.py  opens the .xlsx READ-ONLY on the network share
         ├── engine.py        pure date logic: which reminder is due today?
-        ├── state.py         SQLite: sent_reminders + audit_log
+        ├── state.py         SQLite: sent_reminders (duplicate prevention)
         ├── notifiers.py     TeamsWebhookNotifier / SmtpNotifier (pluggable)
         └── logs/            rotating qmm_reminder.log
         
@@ -84,7 +86,7 @@ to the company's own M365 tenant (Teams webhook URL).
 | Data minimization | `Revizyon İçeriği` (change description) is never read or sent |
 | No hardcoded secrets | Webhook URL from env var `QMM_TEAMS_WEBHOOK_URL` (or an NTFS-protected file); SMTP credentials from env vars; `config.yaml` is git-ignored |
 | Access control | Delegated to existing NTFS/AD rights on the share; the tool needs read-only access; install folder restricted to the service user |
-| Auditability | `audit_log` table: timestamp, run id, document, milestone, channel, recipient, SENT/FAILED/DRY-RUN + rotating text log |
+| Traceability | Rotating text log (`logs/qmm_reminder.log`): every run, send and failure with timestamps |
 | TLS | `verify` on by default; corporate CA bundle configurable (`ca_bundle`) |
 
 ## 4. Future phases (explicitly out of scope for V1)
@@ -93,15 +95,16 @@ to the company's own M365 tenant (Teams webhook URL).
    leader e-mail once the recipient list is confirmed.
 2. **SharePoint integration** — move the list to SharePoint; read via
    Graph; enables Power BI without touching this tool's engine.
-3. **Power BI dashboard** — the SQLite audit log is already a clean data
-   source for a compliance dashboard (reminders sent vs. overdue days).
-4. **Escalation ladder** — second overdue notice to the department head.
-5. **Database migration + web interface** — when the list outgrows Excel,
+3. **Structured audit trail** — reinstate a notification audit table in
+   the SQLite store (dropped from V1 scope) if QM audits later require a
+   queryable record; the log file covers traceability until then.
+4. **Power BI dashboard** — compliance dashboard (reminders sent vs.
+   overdue days); easiest after the audit trail returns.
+5. **Escalation ladder** — second overdue notice to the department head.
+6. **Database migration + web interface** — when the list outgrows Excel,
    replace `excel_reader.py` with a DB reader; engine and notifiers are
    unchanged by design.
-6. **Approval workflow / document version tracking** — full eQMS
+7. **Approval workflow / document version tracking** — full eQMS
    territory; evaluate commercial systems before building.
-7. **SAP integration** — pull document master data from SAP DMS instead
+8. **SAP integration** — pull document master data from SAP DMS instead
    of Excel.
-8. **Automatic audit reports** — monthly PDF/Excel export of `audit_log`
-   for management review.
