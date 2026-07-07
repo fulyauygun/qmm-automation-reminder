@@ -1,0 +1,77 @@
+# QMM Working Instruction reminder — configuration
+#
+# Copy this file to `config.yaml` next to it and adjust the values.
+# `config.yaml` is git-ignored on purpose: it contains company-specific
+# paths that do not belong in the repository. Secrets (Teams webhook URL,
+# SMTP password) are NEVER placed in this file — they are read from
+# environment variables, see the `notifications` section below.
+
+excel:
+  # UNC path to the control list on the network share.
+  # In YAML double-quoted strings a backslash must be doubled.
+  path: "\\\\server\\QMM\\QMM Working Instructions Control List.xlsx"
+
+  # Worksheet name; null = first (active) sheet.
+  sheet: null
+
+  # Header texts as they appear in the Excel file. Matching is
+  # case-insensitive and ignores extra spaces / line breaks in the cell.
+  columns:
+    section: "Bölüm"
+    revision_no: "Revizyon No"
+    revision_date: "Revizyon Tarihi"
+    prepared_by: "Hazırlayan"
+    due_date: "Değişiklik Olmaması Durumunda Güncellenmesi Gereken İlk Tarih"
+    approval_doc: "Onay Dokümanı"
+    # Optional: if the list has a document name / number column, set it here
+    # (e.g. "Doküman Adı" or "Doküman No"). It is used as the display title
+    # and makes document identification more robust.
+    title: null
+
+  # Columns whose values identify a document (for duplicate prevention).
+  # Keys of the `columns` mapping above. If two rows have identical values
+  # in all of these columns they are treated as the same document.
+  id_columns: [section, approval_doc]
+
+reminders:
+  # Days before the due date on which a reminder is sent.
+  milestones_days: [30, 15, 7, 1]
+  # After the due date has passed, repeat an overdue notice every N days.
+  overdue_repeat_days: 7
+  # Fallback: if the due-date cell is empty, due date = revision date + N years.
+  validity_years: 3
+
+notifications:
+  teams:
+    enabled: true
+    # Name of the environment variable holding the Teams webhook URL
+    # (Teams channel -> Workflows -> "Post to a channel when a webhook
+    # request is received"). The URL itself must not be written here.
+    webhook_url_env: "QMM_TEAMS_WEBHOOK_URL"
+    # Alternative: absolute path to a file that contains only the webhook
+    # URL. Protect the file with NTFS permissions (only the service user).
+    # Used only if the environment variable is not set.
+    webhook_url_file: null
+
+  email:
+    enabled: false
+    smtp_host: "smtp.internal.example.com"
+    smtp_port: 25
+    use_starttls: false
+    # Optional SMTP authentication; leave env var unset for anonymous
+    # internal relays.
+    username_env: "QMM_SMTP_USER"
+    password_env: "QMM_SMTP_PASSWORD"
+    from_address: "qmm-reminder@example.com"
+    recipients:
+      - "process.leader@example.com"
+
+  # Path to the corporate CA bundle (PEM) if HTTPS traffic is intercepted
+  # by a corporate proxy; null = system default certificates.
+  ca_bundle: null
+
+storage:
+  # SQLite database holding sent-reminder state and the audit log.
+  state_db: "state/qmm_reminder.db"
+  # Directory for rotating log files.
+  log_dir: "logs"

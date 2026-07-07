@@ -1,0 +1,19 @@
+# Local runtime data (never commit state, logs or real config)
+config.yaml
+secrets*.yaml
+state/
+logs/
+sample_data/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+.pytest_cache/
+*.egg-info/
+dist/
+build/
+
+# Excel temp/lock files
+~$*.xlsx
