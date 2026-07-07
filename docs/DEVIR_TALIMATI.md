@@ -17,10 +17,10 @@ yüklenmez.
 |---|---|
 | Bir talimat revize edildi | Excel'de satırın **Revizyon Tarihi** ve **güncellenme tarihi** alanlarını güncelleyin — hatırlatmalar otomatik olarak yeni tarihe göre yeniden kurulur |
 | Yeni talimat eklendi | Excel'e yeni satır ekleyin, başka işlem gerekmez |
-| Yeni biri kişisel bildirim alsın | Excel'deki **"Bildirim Alıcıları"** sayfasına ad + e-posta satırı ekleyin — ertesi sabahtan itibaren Teams kartlarında adıyla etiketlenir (@bahsetme) ve kişisel bildirim alır. Kişinin ilgili Teams ekibine üye olması gerekir |
-| Birine artık gitmesin | Aynı sayfada o kişinin **Aktif** sütununa `Hayır` yazın |
+| Yeni biri kişisel bildirim alsın | Sistem sahibi, kurulum klasöründeki `config.yaml` → `notifications.teams.mentions` listesine ad + e-posta satırı ekler — ertesi sabahtan itibaren kişi Teams kartlarında adıyla etiketlenir (@bahsetme) ve kişisel bildirim alır. Kişinin ilgili Teams ekibine üye olması gerekir |
+| Birine artık gitmesin | Aynı listeden o kişinin satırını silin (ya da başına `#` koyup devre dışı bırakın) |
 | Teams kartlarını yeni biri sadece görsün | Kişiyi ilgili Teams kanalına ekleyin — başka işlem yok |
-| E-posta da gitsin (kanal açıksa) | Aynı "Bildirim Alıcıları" sayfası e-posta kanalını da besler; ayrı liste tutulmaz |
+| Alıcı yönetimini Excel'e taşımak (isteğe bağlı) | `config.yaml` → `recipients_sheet: "Bildirim Alıcıları"` yapın; artık Excel'deki bu sayfaya eklenen kişiler de etiketlenir. Dikkat: Excel'i düzenleyebilen herkes alıcı da ekleyebilir hâle gelir |
 | Hatırlatma günlerini değiştirmek | Kurulum klasöründeki `config.yaml` → `milestones_days` satırı (örn. `[30, 15, 7, 1]`) |
 | Genel durumu görsel olarak görmek | Kurulum klasöründeki `rapor\index.html` dosyasını tarayıcıda açın — özet sayılar ve talimat tablosu her sabah otomatik yenilenir. Bu dosyayı şirket dışına/İnternet'e koymayın |
 

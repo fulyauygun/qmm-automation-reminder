@@ -59,11 +59,21 @@ def _sheet_recipients(cfg: Config) -> list[tuple[str, str]]:
     return people
 
 
+def _teams_mentions(cfg: Config, people: list[tuple[str, str]]) -> list[tuple[str, str]]:
+    """Config-defined mentions (controlled) plus, if enabled, the
+    self-service sheet people - deduplicated by address."""
+    mentions = list(cfg.teams.mentions)
+    if cfg.teams.mention_recipients:
+        seen = {e.casefold() for _, e in mentions}
+        mentions += [(n, e) for n, e in people if e.casefold() not in seen]
+    return mentions
+
+
 def _build_notifiers(cfg: Config) -> list:
     people = _sheet_recipients(cfg)
     notifiers = []
     if cfg.teams.enabled:
-        mentions = people if cfg.teams.mention_recipients else []
+        mentions = _teams_mentions(cfg, people)
         if mentions:
             log.info("Teams cards will mention %d person(s)", len(mentions))
         notifiers.append(TeamsWebhookNotifier(cfg.teams, cfg.ca_bundle, mentions))
@@ -189,12 +199,13 @@ def _report_failure(cfg: Config, message: str, dry_run: bool) -> None:
     if dry_run or not cfg.teams.enabled:
         return
     try:
-        mentions = []
+        people = []
         if cfg.teams.mention_recipients:
             try:
-                mentions = _sheet_recipients(cfg)
+                people = _sheet_recipients(cfg)
             except Exception:  # noqa: BLE001 - Excel may be the broken part
-                mentions = []
+                people = []
+        mentions = _teams_mentions(cfg, people)
         TeamsWebhookNotifier(cfg.teams, cfg.ca_bundle, mentions).send_text(
             "🔴 QMM hatırlatma otomasyonu ÇALIŞAMADI",
             "Bugünkü kontrol tamamlanamadı, hatırlatmalar gönderilemedi. "

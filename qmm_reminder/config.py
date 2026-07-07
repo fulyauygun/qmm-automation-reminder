@@ -39,8 +39,11 @@ class TeamsConfig:
     enabled: bool
     webhook_url_env: str
     webhook_url_file: str | None
-    # @mention the people from the recipients sheet in every card, so they
-    # get a personal Teams notification instead of only a channel post.
+    # People to @mention in every card, defined here in config by the
+    # system owner (the controlled, recommended way): (name, e-mail/UPN).
+    mentions: list[tuple[str, str]]
+    # Additionally @mention the people from the optional recipients sheet
+    # (self-service via Excel). Only relevant when recipients_sheet is set.
     mention_recipients: bool
 
     def resolve_webhook_url(self) -> str:
@@ -152,10 +155,21 @@ def load_config(path: str | Path) -> Config:
 
     notif_raw = raw.get("notifications") or {}
     teams_raw = notif_raw.get("teams") or {}
+    mentions: list[tuple[str, str]] = []
+    for i, entry in enumerate(teams_raw.get("mentions") or []):
+        if not isinstance(entry, dict) or not entry.get("email"):
+            raise ConfigError(
+                f"notifications.teams.mentions[{i}] must be a mapping with"
+                " 'email' (and optionally 'name')"
+            )
+        email_addr = str(entry["email"]).strip()
+        name = str(entry.get("name") or "").strip() or email_addr.split("@")[0]
+        mentions.append((name, email_addr))
     teams = TeamsConfig(
         enabled=bool(teams_raw.get("enabled", False)),
         webhook_url_env=str(teams_raw.get("webhook_url_env", "QMM_TEAMS_WEBHOOK_URL")),
         webhook_url_file=teams_raw.get("webhook_url_file") or None,
+        mentions=mentions,
         mention_recipients=bool(teams_raw.get("mention_recipients", True)),
     )
     email_raw = notif_raw.get("email") or {}

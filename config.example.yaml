@@ -42,12 +42,12 @@ reminders:
   validity_years: 3
 
 notifications:
-  # Self-service recipient list: a worksheet with this name inside the
-  # control-list workbook. Columns: "E-posta" (required), "Ad" (optional,
-  # used for Teams mentions), "Aktif" (optional; "Hayır" disables a row).
-  # The QMM team adds/removes people there without touching this file.
-  # Feeds Teams @mentions and, when enabled, the e-mail channel.
-  recipients_sheet: "Bildirim Alıcıları"
+  # OPTIONAL self-service recipient list: a worksheet with this name
+  # inside the control-list workbook (columns: "E-posta" required, "Ad"
+  # and "Aktif" optional). Anyone who can edit the Excel can then manage
+  # recipients. Leave null (recommended default) to keep recipient
+  # management here in config, under the system owner's control.
+  recipients_sheet: null
 
   teams:
     enabled: true
@@ -59,9 +59,17 @@ notifications:
     # URL. Protect the file with NTFS permissions (only the service user).
     # Used only if the environment variable is not set.
     webhook_url_file: null
-    # @mention the people from recipients_sheet in every card, so each of
-    # them gets a personal Teams notification (they must be members of the
-    # team the channel belongs to).
+    # People to @mention in every card so they get a personal Teams
+    # notification (not just a channel post). Managed here, manually, by
+    # whoever administers this installation. The person must be a member
+    # of the team the channel belongs to. E-mail = company account (UPN).
+    mentions:
+      - name: "Süreç Lideri"
+        email: "surec.lideri@example.com"
+      # - name: "İkinci Kişi"
+      #   email: "ikinci.kisi@example.com"
+    # Also @mention the people from recipients_sheet (only relevant if
+    # recipients_sheet above is set).
     mention_recipients: true
 
   email:

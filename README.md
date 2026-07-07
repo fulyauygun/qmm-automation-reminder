@@ -101,23 +101,24 @@ overdue repeat interval, notification channels. An SMTP e-mail channel is
 included but disabled by default — set `notifications.email.enabled: true`
 to also send e-mails via the internal relay.
 
-### Self-service recipient management (no IT needed)
+### Recipient management — two models
 
-Both channels are designed so the QMM team manages recipients **without
-touching config or code** after handover:
-
-* **Recipients sheet:** people live in a worksheet named **"Bildirim
-  Alıcıları"** inside the control-list workbook itself (columns: `Ad`,
-  `E-posta`, `Aktif`). Adding a row adds a person on the next run;
-  writing `Hayır` in `Aktif` disables one without deleting it. Invalid
-  addresses are skipped with a log warning and never break the run.
-* **Teams:** every card **@mentions** the people from the sheet
-  (`mention_recipients: true`), so each of them gets a personal Teams
-  notification — not just a post in the channel. Mentioned people must be
-  members of the team the channel belongs to. Channel membership alone
-  also works: everyone in the channel sees the cards.
-* **E-mail (optional):** the same sheet feeds the SMTP channel when it is
-  enabled; addresses are merged with the static `recipients` list.
+* **Controlled via config (default, recommended):** the people to notify
+  are listed under `notifications.teams.mentions` in `config.yaml`
+  (name + company e-mail). Every card **@mentions** them, so each gets a
+  personal Teams notification — not just a post in the channel. Only
+  whoever administers the installation can change this list, which is
+  the standard governance model. Mentioned people must be members of the
+  team the channel belongs to; channel membership alone also works for
+  simply *seeing* the cards.
+* **Self-service via Excel (optional):** set
+  `notifications.recipients_sheet: "Bildirim Alıcıları"` and the team can
+  additionally manage people in a worksheet inside the control-list
+  workbook (columns `Ad`, `E-posta`, `Aktif`; `Hayır` disables a row).
+  Trade-off: anyone who can edit the Excel can then change recipients.
+  Off by default.
+* **E-mail (optional):** the SMTP channel uses the static
+  `email.recipients` list merged with the sheet (when enabled).
 
 ## Operations
 

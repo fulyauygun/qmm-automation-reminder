@@ -13,7 +13,7 @@ def notifier(monkeypatch):
         monkeypatch.setenv("TEST_WEBHOOK", "https://example.com/hook")
         cfg = TeamsConfig(
             enabled=True, webhook_url_env="TEST_WEBHOOK",
-            webhook_url_file=None, mention_recipients=True,
+            webhook_url_file=None, mentions=[], mention_recipients=True,
         )
         return TeamsWebhookNotifier(cfg, mentions=mentions)
     return build
