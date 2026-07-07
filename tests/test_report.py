@@ -25,15 +25,27 @@ def test_status_thresholds():
 
 def test_render_contains_docs_sorted_and_escaped():
     docs = [
-        doc(TODAY + timedelta(days=60), "B<script>"),
+        doc(TODAY + timedelta(days=60), "B<img src=x>"),
         doc(TODAY - timedelta(days=3), "A-doldu"),
     ]
     html = render_report(docs, TODAY, "liste.xlsx")
     assert "Süresi doldu" in html and "Güncel" in html
-    assert "&lt;script&gt;" in html and "<script>" not in html
+    assert "&lt;img src=x&gt;" in html and "<img src=x>" not in html
     # overdue row is rendered before the up-to-date one (sorted by due date)
-    assert html.index("A-doldu") < html.index("B&lt;script&gt;")
+    assert html.index("A-doldu") < html.index("B&lt;img src=x&gt;")
     assert "3 gün geçti" in html
+
+
+def test_render_has_section_bars_and_filters():
+    docs = [
+        doc(TODAY - timedelta(days=1), "X1"),
+        doc(TODAY + timedelta(days=90), "X2"),
+    ]
+    html = render_report(docs, TODAY, "liste.xlsx")
+    assert "Bölüm bazında durum" in html
+    assert "seg-critical" in html and "seg-good" in html
+    assert 'data-filter="all"' in html.replace("'", '"')
+    assert 'id="q"' in html.replace("'", '"')
 
 
 def test_write_report_creates_file(tmp_path: Path):
