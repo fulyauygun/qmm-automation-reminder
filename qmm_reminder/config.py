@@ -45,6 +45,12 @@ class TeamsConfig:
     # Additionally @mention the people from the optional recipients sheet
     # (self-service via Excel). Only relevant when recipients_sheet is set.
     mention_recipients: bool
+    # Optional explicit PAC (proxy auto-config) URL for networks where
+    # outbound HTTPS needs a proxy resolved per-request rather than a
+    # fixed address. None = auto-detect from the Windows registry (what
+    # pypac does by default, e.g. reads AutoConfigURL under HKCU\...\
+    # Internet Settings - already set on most managed corporate PCs).
+    pac_url: str | None = None
 
     def resolve_webhook_url(self) -> str:
         url = os.environ.get(self.webhook_url_env, "").strip()
@@ -171,6 +177,7 @@ def load_config(path: str | Path) -> Config:
         webhook_url_file=teams_raw.get("webhook_url_file") or None,
         mentions=mentions,
         mention_recipients=bool(teams_raw.get("mention_recipients", True)),
+        pac_url=teams_raw.get("pac_url") or None,
     )
     email_raw = notif_raw.get("email") or {}
     email = EmailConfig(

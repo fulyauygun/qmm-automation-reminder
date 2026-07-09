@@ -71,6 +71,14 @@ notifications:
     # Also @mention the people from recipients_sheet (only relevant if
     # recipients_sheet above is set).
     mention_recipients: true
+    # Optional: explicit PAC (proxy auto-config) URL. Needed on networks
+    # where outbound HTTPS requires a proxy resolved per-request from a
+    # script rather than one fixed address (e.g. Bosch's network). Leave
+    # null (recommended): the "pypac" package auto-detects the PAC URL
+    # from the Windows registry (HKCU\...\Internet Settings\AutoConfigURL)
+    # - already set on most managed corporate PCs, same one the browser
+    # uses. Only set this manually if auto-detection fails.
+    pac_url: null
 
   email:
     enabled: false

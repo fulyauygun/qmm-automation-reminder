@@ -29,6 +29,25 @@ class NotificationError(Exception):
     pass
 
 
+def _build_session(pac_url: str | None) -> requests.Session:
+    """A requests Session that resolves the outbound proxy per-request from
+    a corporate PAC (proxy auto-config) file, when the optional ``pypac``
+    package is installed. Needed on networks (e.g. Bosch's) where internet
+    access requires a proxy that is *not* a single fixed address but a
+    script evaluated per URL - plain ``requests`` and static HTTP(S)_PROXY
+    environment variables can't express that, but the browser's proxy
+    already does (via the Windows registry ``AutoConfigURL``), which is
+    exactly what pypac reads. Falls back to a plain session (direct
+    connection, same behavior as before) if pypac isn't installed or PAC
+    discovery fails for any reason - never blocks sending."""
+    try:
+        from pypac import PACSession
+
+        return PACSession(pac_url=pac_url) if pac_url else PACSession()
+    except Exception:  # noqa: BLE001 - pypac missing or PAC discovery failed
+        return requests.Session()
+
+
 def _with_retries(action, describe: str):
     for attempt in range(_RETRIES):
         try:
@@ -62,6 +81,7 @@ class TeamsWebhookNotifier:
         self._url = cfg.resolve_webhook_url()
         self._verify = ca_bundle if ca_bundle else True
         self._mentions = mentions or []
+        self._session = _build_session(cfg.pac_url)
 
     @property
     def recipient(self) -> str:
@@ -81,7 +101,7 @@ class TeamsWebhookNotifier:
         }
 
         def _post():
-            resp = requests.post(
+            resp = self._session.post(
                 self._url, json=payload, timeout=_TIMEOUT, verify=self._verify
             )
             if resp.status_code >= 300:
@@ -141,7 +161,7 @@ class TeamsWebhookNotifier:
         }
 
         def _post():
-            resp = requests.post(
+            resp = self._session.post(
                 self._url, json=payload, timeout=_TIMEOUT, verify=self._verify
             )
             if resp.status_code >= 300:
