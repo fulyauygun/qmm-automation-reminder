@@ -52,19 +52,35 @@ okur.
 
 Repo `Settings > Secrets and variables > Actions` altina eklenmesi gerekenler:
 
-| Secret          | Aciklama                                              |
-| --------------- | ------------------------------------------------------ |
-| `SMTP_HOST`     | SMTP sunucu adresi (orn. `smtp.gmail.com`)             |
-| `SMTP_PORT`     | Genelde `587`                                          |
-| `SMTP_USER`     | Gonderen mail adresi / kullanici adi                   |
-| `SMTP_PASSWORD` | Mail hesabinin (uygulama) sifresi                       |
-| `MAIL_FROM`     | Gorunecek gonderen adresi (bos birakilirsa SMTP_USER)  |
+| Secret            | Aciklama                                                       |
+| ----------------- | ---------------------------------------------------------------- |
+| `SMTP_HOST`       | SMTP sunucu adresi (orn. `smtp.gmail.com`)                      |
+| `SMTP_PORT`       | Genelde `587`                                                    |
+| `SMTP_USER`       | Gonderen mail hesabinin kullanici adi (giris icin)               |
+| `SMTP_PASSWORD`   | Mail hesabinin (uygulama) sifresi                                |
+| `MAIL_FROM`       | Gorunecek gonderen adresi (bos birakilirsa SMTP_USER)            |
+| `MAIL_FROM_NAME`  | Gorunen gonderen ismi (bos birakilirsa "QMM Talimat Hatirlatma Sistemi") |
+| `REPLY_TO`        | (Opsiyonel) Birisi maile "yanitla" derse gidecek adres           |
 
-**Oneri:** Kurumsal SMTP bilgisi yoksa, baslangicta bir Gmail hesabi icin
-["Uygulama Sifresi" (App Password)](https://myaccount.google.com/apppasswords)
-olusturup `SMTP_HOST=smtp.gmail.com`, `SMTP_PORT=587` ile kullanabilirsiniz.
-Ileride Bosch kurumsal SMTP bilgisi temin edilirse sadece bu secret'lari
-degistirmeniz yeterli, kod tarafinda degisiklik gerekmez.
+**Kurumsal (Bosch) SMTP izni alinamiyorsa oneri:** Kimseye ait olmayan,
+sadece bu otomasyon icin acilmis notr bir hesap kullanin (orn.
+`qmmhatirlatma@gmail.com`). Bosch IT'den herhangi bir onay/erisim
+gerektirmez, sadece normal bir Gmail hesabi acmak kadar basittir:
+
+1. Bu iş icin yeni bir Gmail hesabi acin (kimsenin kisisel adi olmasin).
+2. O hesapta 2 Adimli Dogrulama'yi acip
+   ["Uygulama Sifresi"](https://myaccount.google.com/apppasswords) olusturun.
+3. Secret'lari şöyle ayarlayin:
+   - `SMTP_HOST=smtp.gmail.com`, `SMTP_PORT=587`
+   - `SMTP_USER` / `MAIL_FROM` = yeni acilan hesabin adresi
+   - `SMTP_PASSWORD` = olusturulan uygulama sifresi
+   - `MAIL_FROM_NAME` = orn. `QMM Talimat Hatirlatma Sistemi`
+   - `REPLY_TO` = orn. Caglar'in gercek adresi (biri yanitlarsa ona gitsin diye)
+
+Boylece mailler kisisel bir isimle degil, kurumsal gorunumlu bir sistem
+adiyla gider ve yanitlar dogru kisiye yonlenir. Ileride Bosch kurumsal SMTP
+erisimi saglanirsa sadece bu secret'lari degistirmeniz yeterli, kod
+tarafinda degisiklik gerekmez.
 
 ## Lokal test
 

@@ -16,6 +16,7 @@ import smtplib
 from datetime import date, datetime
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+from email.utils import formataddr
 from pathlib import Path
 
 import openpyxl
@@ -186,11 +187,15 @@ def send_email(subject: str, text_body: str, html_body: str, recipients: list[st
     user = os.environ["SMTP_USER"]
     password = os.environ["SMTP_PASSWORD"]
     mail_from = os.environ.get("MAIL_FROM", user)
+    mail_from_name = os.environ.get("MAIL_FROM_NAME", "QMM Talimat Hatırlatma Sistemi")
+    reply_to = os.environ.get("REPLY_TO")
 
     msg = MIMEMultipart("alternative")
-    msg["From"] = mail_from
+    msg["From"] = formataddr((mail_from_name, mail_from))
     msg["To"] = ", ".join(recipients)
     msg["Subject"] = subject
+    if reply_to:
+        msg["Reply-To"] = reply_to
     msg.attach(MIMEText(text_body, "plain", "utf-8"))
     msg.attach(MIMEText(html_body, "html", "utf-8"))
 
