@@ -1,7 +1,8 @@
 # QMM Automation Reminder
 
 Bosch QMM (Kalite) bolumu icin calisma talimatlarinin gecerlilik suresi
-dolmadan once otomatik mail hatirlatmasi gonderen basit bir otomasyon.
+dolmadan once otomatik mail hatirlatmasi gonderen ve tum talimatlarin guncel
+durumunu gosteren bir dashboard ureten basit bir otomasyon.
 
 ## Nasil calisir
 
@@ -14,9 +15,29 @@ dolmadan once otomatik mail hatirlatmasi gonderen basit bir otomasyon.
 3. Ayni talimat + ayni esik icin ikinci kez mail gitmemesi icin gonderilen
    hatirlatmalar `scripts/state/sent_reminders.json` dosyasina kaydedilir
    (GitHub Actions bu dosyayi her calismadan sonra otomatik commit'ler).
-4. Zamanlama: `.github/workflows/qmm-reminders.yml` her gun saat 06:00 UTC'de
+4. `scripts/generate_dashboard.py` her gun (mail gidip gitmedigine bakmaksizin)
+   **tum** talimatlarin guncel durumunu (suresi gecmis / kritik / yaklasan /
+   normal, renk kodlu) gosteren `dashboard.html` dosyasini yeniden uretir ve
+   repoya commit'ler. Bkz. asagidaki "Dashboard'u kullanma" bolumu.
+5. Zamanlama: `.github/workflows/qmm-reminders.yml` her gun saat 06:00 UTC'de
    (TR saatiyle ~08:00-09:00) otomatik calisir. `Actions` sekmesinden elle de
    tetiklenebilir (test icin farkli bir tarih veya dry-run secenegiyle).
+
+## Dashboard'u kullanma
+
+`dashboard.html` sunucu/Python/kurulum **gerektirmeyen**, tek basina calisan
+bir HTML dosyasidir; herhangi bir bilgisayarda cift tiklayip tarayicida
+acabilirsiniz. Guncel halini almak icin:
+
+1. GitHub'da repo sayfasinda `dashboard.html` dosyasina tiklayin.
+2. Sag ust kosedeki indirme (download) butonuyla dosyayi bilgisayariniza indirin.
+3. Indirdiginiz dosyayi cift tiklayip tarayicida acin.
+
+Her gun otomatik calisma sonrasi dosya guncellenir; en guncel halini almak
+icin 1-3 adimlarini tekrarlamaniz (ya da repoyu `git pull` ile guncellemeniz)
+yeterlidir. Ileride bu bilgisayarda Python calistirilabiliyorsa, dosyayi
+elle indirip acmak yerine otomatik yenilenen canli bir localhost sayfasina
+da gecebiliriz.
 
 ## Talimat listesini guncel tutmak
 
