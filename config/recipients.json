@@ -2,14 +2,14 @@
   "_readme": "Hatirlatma maillerini alacak kisiler burada listelenir. Ekleme/cikarma yapmak icin bu dosyayi duzenleyip commit+push edin (repoya yazma yetkisi olan -orn. Caglar abi- bunu yapabilir).",
   "admins": [
     {
-      "name": "Caglar",
-      "email": "caglar.ornek@bosch.com"
+      "name": "Caglar Selvi",
+      "email": "caglar.selvş@tr.bosch.com"
     }
   ],
   "recipients": [
     {
-      "name": "Caglar",
-      "email": "caglar.ornek@bosch.com"
+      "name": "Caglar Selvi",
+      "email": "caglar.selvi@tr.bosch.com"
     }
   ]
 }
