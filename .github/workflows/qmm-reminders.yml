@@ -1,0 +1,62 @@
+name: QMM Talimat Hatirlatma
+
+on:
+  schedule:
+    # Her gun 06:00 UTC (TR saatiyle yaz saatinde 09:00, kis saatinde 08:00)
+    - cron: "0 6 * * *"
+  workflow_dispatch:
+    inputs:
+      date:
+        description: "Test icin bugun yerine kullanilacak tarih (YYYY-MM-DD, bos birakilabilir)"
+        required: false
+      dry_run:
+        description: "true ise mail gondermeden sadece sonucu yazdirir"
+        required: false
+        default: "false"
+
+permissions:
+  contents: write
+
+jobs:
+  send-reminders:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run reminder check
+        env:
+          SMTP_HOST: ${{ secrets.SMTP_HOST }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+          MAIL_FROM: ${{ secrets.MAIL_FROM }}
+        run: |
+          ARGS=""
+          if [ -n "${{ github.event.inputs.date }}" ]; then
+            ARGS="$ARGS --date ${{ github.event.inputs.date }}"
+          fi
+          if [ "${{ github.event.inputs.dry_run }}" = "true" ]; then
+            ARGS="$ARGS --dry-run"
+          fi
+          python scripts/check_reminders.py $ARGS
+
+      - name: Commit updated state (gonderilen hatirlatma kayitlari)
+        run: |
+          git config user.name "qmm-reminder-bot"
+          git config user.email "actions@users.noreply.github.com"
+          if ! git diff --quiet -- scripts/state/sent_reminders.json; then
+            git add scripts/state/sent_reminders.json
+            git commit -m "chore: gonderilen hatirlatma kayitlarini guncelle"
+            git push
+          else
+            echo "State degismedi, commit atlanildi."
+          fi
