@@ -18,7 +18,14 @@ import json
 from datetime import date, datetime
 from pathlib import Path
 
-from check_reminders import EXCEL_PATH, build_email_html, build_subject, load_documents
+from check_reminders import (
+    EXCEL_PATH,
+    RECIPIENTS_PATH,
+    build_email_html,
+    build_subject,
+    load_documents,
+    load_recipients,
+)
 
 ROOT = Path(__file__).resolve().parent.parent
 OUTPUT_PATH = ROOT / "dashboard.html"
@@ -70,8 +77,9 @@ def build_rows(documents: list[dict], today: date) -> list[dict]:
     return rows_data
 
 
-def render_html(documents: list[dict], today: date) -> str:
+def render_html(documents: list[dict], today: date, recipients: list[dict]) -> str:
     rows_data = build_rows(documents, today)
+    recipients_json = json.dumps(recipients, ensure_ascii=False)
 
     counts: dict[str, int] = {}
     for r in rows_data:
@@ -135,8 +143,9 @@ def render_html(documents: list[dict], today: date) -> str:
     background-image: linear-gradient(100deg, rgba(0,0,0,.58), rgba(0,0,0,.28)),
                        linear-gradient(100deg, {header_gradient});
     color:#fff; padding:28px 40px;
-    display:flex; align-items:center; gap:18px;
+    display:flex; align-items:flex-start; justify-content:space-between; gap:18px; flex-wrap:wrap;
   }}
+  .header-left {{ display:flex; align-items:center; gap:18px; }}
   .logo-badge {{
     /* Gercek Bosch logosu icin: bu div'i <img src="..."> ile degistirin */
     width:56px; height:56px; border-radius:50%; background:#fff; color:#1a1a1a;
@@ -146,6 +155,37 @@ def render_html(documents: list[dict], today: date) -> str:
   header h1 {{ margin:0; font-size:24px; }}
   header .subtitle {{ color:#f1f1f1; font-size:14px; margin-top:6px; }}
   header .meta {{ color:#e2e2e2; font-size:12px; margin-top:14px; }}
+
+  .admin-panel {{
+    background:rgba(255,255,255,.96); color:#1a1a1a; border-radius:12px; padding:14px 16px;
+    min-width:260px; box-shadow:0 6px 18px rgba(0,0,0,.2);
+  }}
+  .admin-panel-title {{
+    font-size:12px; text-transform:uppercase; letter-spacing:0.04em; color:#6b7280;
+    font-weight:bold; margin-bottom:10px; display:flex; align-items:center; gap:6px;
+  }}
+  .admin-panel-title .badge {{
+    background:#3E4C9C; color:#fff; border-radius:10px; padding:1px 8px; font-size:10px;
+  }}
+  .admin-recipients {{ display:flex; flex-direction:column; gap:6px; margin-bottom:10px; max-height:120px; overflow-y:auto; }}
+  .admin-recipient {{
+    display:flex; align-items:center; justify-content:space-between; gap:8px;
+    background:#f3f4f6; border-radius:8px; padding:5px 8px; font-size:12px;
+  }}
+  .admin-recipient .remove-btn {{
+    border:none; background:none; color:#9ca3af; cursor:pointer; font-size:14px; line-height:1;
+    padding:0 2px;
+  }}
+  .admin-recipient .remove-btn:hover {{ color:#dc2626; }}
+  .admin-add-row {{ display:flex; gap:6px; }}
+  .admin-add-row input {{
+    flex:1; padding:7px 10px; border:1px solid #d1d5db; border-radius:8px; font-size:12px; min-width:0;
+  }}
+  .admin-add-row button {{
+    background:#3E4C9C; color:#fff; border:none; border-radius:8px; padding:7px 12px;
+    font-size:12px; font-weight:bold; cursor:pointer; white-space:nowrap;
+  }}
+  .admin-add-row button:hover {{ background:#2f3a78; }}
   main {{ max-width:1100px; margin:0 auto; padding:32px 40px 60px; }}
   section {{ margin-bottom:44px; }}
   section h2 {{
@@ -217,11 +257,22 @@ def render_html(documents: list[dict], today: date) -> str:
 </head>
 <body>
   <header>
-    <div class="logo-badge">QMM</div>
-    <div>
-      <h1>{DASHBOARD_TITLE}</h1>
-      <div class="subtitle">Kalite Bölümü (QMM) &middot; Çalışma Talimatları Geçerlilik Takibi</div>
-      <div class="meta">Son güncelleme: {today.strftime('%d.%m.%Y')} &middot; Toplam {len(rows_data)} talimat izleniyor</div>
+    <div class="header-left">
+      <div class="logo-badge">QMM</div>
+      <div>
+        <h1>{DASHBOARD_TITLE}</h1>
+        <div class="subtitle">Kalite Bölümü (QMM) &middot; Çalışma Talimatları Geçerlilik Takibi</div>
+        <div class="meta">Son güncelleme: {today.strftime('%d.%m.%Y')} &middot; Toplam {len(rows_data)} talimat izleniyor</div>
+      </div>
+    </div>
+
+    <div class="admin-panel">
+      <div class="admin-panel-title">Yönetici Paneli <span class="badge">Admin</span></div>
+      <div class="admin-recipients" id="admin-recipients"></div>
+      <div class="admin-add-row">
+        <input type="email" id="admin-email-input" placeholder="ornek@tr.bosch.com">
+        <button id="admin-add-btn">Ekle</button>
+      </div>
     </div>
   </header>
 
@@ -294,6 +345,47 @@ def render_html(documents: list[dict], today: date) -> str:
   </main>
 
   <script>
+    // NOT: Bu liste sadece sayfa acikken tarayici hafizasinda tutulur, kalici
+    // olarak hicbir yere kaydedilmez (demo/gorsel amaclidir). Gercek alici
+    // listesi hala config/recipients.json uzerinden yonetiliyor.
+    let recipients = {recipients_json};
+
+    function renderRecipients() {{
+      const container = document.getElementById('admin-recipients');
+      if (!recipients.length) {{
+        container.innerHTML = '<div style="color:#9ca3af;font-size:12px;">Henüz alıcı yok</div>';
+        return;
+      }}
+      container.innerHTML = recipients.map((r, i) => `
+        <div class="admin-recipient">
+          <span>${{r.name ? r.name + ' &middot; ' : ''}}${{r.email}}</span>
+          <button class="remove-btn" data-index="${{i}}" title="Kaldır">✕</button>
+        </div>
+      `).join('');
+      container.querySelectorAll('.remove-btn').forEach(btn => {{
+        btn.addEventListener('click', () => {{
+          recipients.splice(Number(btn.dataset.index), 1);
+          renderRecipients();
+        }});
+      }});
+    }}
+
+    document.getElementById('admin-add-btn').addEventListener('click', () => {{
+      const input = document.getElementById('admin-email-input');
+      const email = input.value.trim();
+      if (!email || !email.includes('@')) {{
+        input.focus();
+        return;
+      }}
+      recipients.push({{ name: '', email }});
+      input.value = '';
+      renderRecipients();
+    }});
+    document.getElementById('admin-email-input').addEventListener('keydown', (e) => {{
+      if (e.key === 'Enter') document.getElementById('admin-add-btn').click();
+    }});
+    renderRecipients();
+
     const rows = {rows_json};
     let activeStatus = null;
     let activeDept = null;
@@ -399,7 +491,8 @@ def main() -> None:
     output_path = Path(args.output) if args.output else OUTPUT_PATH
 
     documents = load_documents(EXCEL_PATH)
-    html = render_html(documents, today)
+    recipients = load_recipients(RECIPIENTS_PATH)
+    html = render_html(documents, today, recipients)
     output_path.write_text(html, encoding="utf-8")
     print(f"Dashboard olusturuldu: {output_path}")
 
