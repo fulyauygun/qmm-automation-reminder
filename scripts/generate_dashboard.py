@@ -263,10 +263,10 @@ def render_html(documents: list[dict], today: date, recipients: list[dict]) -> s
     <div class="header-left">
       <div class="logo-chip">
         <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-          <circle cx="50" cy="50" r="45" fill="none" stroke="#58595B" stroke-width="5"/>
-          <rect x="26" y="18" width="15" height="64" rx="7.5" fill="none" stroke="#58595B" stroke-width="5"/>
-          <rect x="59" y="18" width="15" height="64" rx="7.5" fill="none" stroke="#58595B" stroke-width="5"/>
-          <rect x="30" y="47" width="40" height="6" fill="#58595B"/>
+          <circle cx="50" cy="50" r="45" fill="none" stroke="#58595B" stroke-width="4"/>
+          <path d="M 32,15 Q 21,50 32,85 Q 43,50 32,15 Z" fill="#58595B"/>
+          <path d="M 68,15 Q 57,50 68,85 Q 79,50 68,15 Z" fill="#58595B"/>
+          <rect x="39" y="47" width="22" height="6" fill="#58595B"/>
         </svg>
         <span class="wordmark">BOSCH</span>
       </div>
