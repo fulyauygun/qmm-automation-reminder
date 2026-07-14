@@ -23,11 +23,27 @@ from check_reminders import EXCEL_PATH, build_email_html, build_subject, load_do
 ROOT = Path(__file__).resolve().parent.parent
 OUTPUT_PATH = ROOT / "dashboard.html"
 
-# Bosch kurumsal tonlarina yakin renk paleti
-BOSCH_RED = "#E2001A"
-BOSCH_DARK = "#1A1A1A"
+DASHBOARD_TITLE = "QMM Talimat Takip Sistemi"
+
+# Referans gorseldeki spektrumdan orneklenen renk paleti (kirmizidan
+# yesile). Baslik gradyani ve bolum rozetleri icin kullanilir.
+SPECTRUM_PALETTE = [
+    "#C81E3A",  # kirmizi
+    "#9C2B6E",  # magenta
+    "#6B3FA0",  # mor
+    "#3E4C9C",  # indigo
+    "#1E5FA8",  # mavi
+    "#1C8FC0",  # gok mavisi
+    "#1CB4C9",  # camgobegi
+    "#14A085",  # deniz yesili
+    "#2E9E3F",  # yesil
+    "#8FC93F",  # sari-yesil
+]
 
 # (ust_sinir_gun, etiket, arka_plan_rengi, yazi_rengi)
+# NOT: aciliyet renkleri evrensel anlam tasidigi (kirmizi=kritik, yesil=normal)
+# icin spektrum paletinden degil, sabit kirmizi/turuncu/sari/yesil tonlarindan
+# secildi -- boylece durum okunabilirligi bozulmuyor.
 STATUS_BANDS = [
     (0, "Süresi geçti", "#fee2e2", "#991b1b"),
     (7, "Kritik", "#fee2e2", "#dc2626"),
@@ -62,6 +78,7 @@ def render_html(documents: list[dict], today: date) -> str:
         counts[r["label"]] = counts.get(r["label"], 0) + 1
 
     departments = sorted({r["bolum"] for r in rows_data if r["bolum"]})
+    dept_colors = {d: SPECTRUM_PALETTE[i % len(SPECTRUM_PALETTE)] for i, d in enumerate(departments)}
 
     summary_cards = "".join(
         f"""
@@ -72,13 +89,19 @@ def render_html(documents: list[dict], today: date) -> str:
         for _, label, bg, fg in STATUS_BANDS
     )
 
-    department_options = "".join(f'<option value="{d}">{d}</option>' for d in departments)
+    dept_chips = "".join(
+        f"""<button class="dept-chip" data-dept="{d}" style="border-color:{dept_colors[d]};color:{dept_colors[d]};">
+          <span class="dot" style="background:{dept_colors[d]};"></span>{d}
+        </button>"""
+        for d in departments
+    )
 
     rows_json = json.dumps(
         [
             {
                 "talimat": r["talimat"],
                 "bolum": r["bolum"],
+                "bolumRengi": dept_colors.get(r["bolum"], "#6b7280"),
                 "tarih": r["son_gecerlilik"].strftime("%d.%m.%Y"),
                 "gun": r["days_left"],
                 "label": r["label"],
@@ -95,28 +118,39 @@ def render_html(documents: list[dict], today: date) -> str:
     mail_html = build_email_html(sample_items, today) if sample_items else ""
     mail_subject = build_subject(sample_items, today) if sample_items else ""
 
+    header_gradient = ", ".join(SPECTRUM_PALETTE)
+
     return f"""<!doctype html>
 <html lang="tr">
 <head>
 <meta charset="utf-8">
-<title>QMM Talimat Hatırlatma Sistemi</title>
+<title>{DASHBOARD_TITLE}</title>
 <style>
   * {{ box-sizing:border-box; }}
   body {{
-    font-family: Arial, Helvetica, sans-serif; color:{BOSCH_DARK}; background:#f5f5f5;
+    font-family: Arial, Helvetica, sans-serif; color:#1a1a1a; background:#f5f5f5;
     margin:0; padding:0;
   }}
   header {{
-    background:{BOSCH_DARK}; color:#fff; padding:28px 40px; border-top:6px solid {BOSCH_RED};
+    background-image: linear-gradient(100deg, rgba(0,0,0,.58), rgba(0,0,0,.28)),
+                       linear-gradient(100deg, {header_gradient});
+    color:#fff; padding:28px 40px;
+    display:flex; align-items:center; gap:18px;
+  }}
+  .logo-badge {{
+    /* Gercek Bosch logosu icin: bu div'i <img src="..."> ile degistirin */
+    width:56px; height:56px; border-radius:50%; background:#fff; color:#1a1a1a;
+    display:flex; align-items:center; justify-content:center; font-weight:bold; font-size:14px;
+    flex-shrink:0; letter-spacing:0.02em;
   }}
   header h1 {{ margin:0; font-size:24px; }}
-  header .subtitle {{ color:#c7c7c7; font-size:14px; margin-top:6px; }}
-  header .meta {{ color:#9c9c9c; font-size:12px; margin-top:14px; }}
+  header .subtitle {{ color:#f1f1f1; font-size:14px; margin-top:6px; }}
+  header .meta {{ color:#e2e2e2; font-size:12px; margin-top:14px; }}
   main {{ max-width:1100px; margin:0 auto; padding:32px 40px 60px; }}
   section {{ margin-bottom:44px; }}
   section h2 {{
-    font-size:16px; text-transform:uppercase; letter-spacing:0.04em; color:{BOSCH_RED};
-    border-bottom:2px solid {BOSCH_RED}; padding-bottom:8px; margin-bottom:20px;
+    font-size:16px; text-transform:uppercase; letter-spacing:0.04em; color:#3E4C9C;
+    border-bottom:2px solid #3E4C9C; padding-bottom:8px; margin-bottom:20px;
   }}
 
   .cards {{ display:flex; gap:12px; flex-wrap:wrap; }}
@@ -125,25 +159,37 @@ def render_html(documents: list[dict], today: date) -> str:
     font-family:inherit; text-align:left; transition:transform .12s ease, box-shadow .12s ease;
   }}
   .card:hover {{ transform:translateY(-2px); box-shadow:0 4px 10px rgba(0,0,0,.12); }}
-  .card.active {{ outline:3px solid {BOSCH_DARK}; }}
+  .card.active {{ outline:3px solid #1a1a1a; }}
   .card-count {{ font-size:28px; font-weight:bold; }}
   .card-label {{ font-size:13px; margin-top:2px; }}
 
-  .toolbar {{ display:flex; gap:12px; flex-wrap:wrap; margin-bottom:16px; align-items:center; }}
-  .toolbar input, .toolbar select {{
+  .toolbar {{ display:flex; gap:12px; flex-wrap:wrap; margin-bottom:12px; align-items:center; }}
+  .toolbar input {{
     padding:9px 12px; border:1px solid #d1d5db; border-radius:8px; font-size:14px;
+    flex:1; min-width:220px;
   }}
-  .toolbar input {{ flex:1; min-width:220px; }}
   .toolbar button.reset {{
     padding:9px 14px; border-radius:8px; border:1px solid #d1d5db; background:#fff; cursor:pointer;
   }}
 
+  .dept-chips {{ display:flex; gap:8px; flex-wrap:wrap; margin-bottom:20px; }}
+  .dept-chip {{
+    display:inline-flex; align-items:center; gap:6px; background:#fff; border:1.5px solid;
+    border-radius:16px; padding:5px 12px; font-size:12px; font-weight:bold; cursor:pointer;
+    font-family:inherit;
+  }}
+  .dept-chip .dot {{ width:8px; height:8px; border-radius:50%; }}
+  .dept-chip.active {{ color:#fff !important; }}
+  .dept-chip.active .dot {{ background:#fff !important; }}
+
   table {{ border-collapse:collapse; width:100%; background:#fff; border:1px solid #e5e7eb; border-radius:10px; overflow:hidden; }}
   thead tr {{ background:#f3f4f6; text-align:left; }}
   th {{ padding:12px; cursor:pointer; user-select:none; white-space:nowrap; }}
-  th:hover {{ color:{BOSCH_RED}; }}
+  th:hover {{ color:#3E4C9C; }}
   td {{ padding:10px 12px; border-bottom:1px solid #e5e7eb; font-size:14px; }}
   .pill {{ display:inline-block; padding:3px 10px; border-radius:12px; font-weight:bold; font-size:12px; }}
+  .dept-pill {{ display:inline-flex; align-items:center; gap:6px; font-size:13px; }}
+  .dept-pill .dot {{ width:8px; height:8px; border-radius:50%; flex-shrink:0; }}
   #empty-state {{ text-align:center; color:#6b7280; padding:30px; display:none; }}
 
   .flow {{ display:flex; gap:0; flex-wrap:wrap; }}
@@ -154,10 +200,10 @@ def render_html(documents: list[dict], today: date) -> str:
   .flow-step:last-child {{ margin-right:0; }}
   .flow-step:not(:last-child)::after {{
     content:"→"; position:absolute; right:-24px; top:50%; transform:translateY(-50%);
-    font-size:20px; color:{BOSCH_RED}; font-weight:bold;
+    font-size:20px; color:#3E4C9C; font-weight:bold;
   }}
   .flow-num {{
-    width:28px; height:28px; border-radius:50%; background:{BOSCH_RED}; color:#fff;
+    width:28px; height:28px; border-radius:50%; background:#3E4C9C; color:#fff;
     display:flex; align-items:center; justify-content:center; font-weight:bold; margin-bottom:10px;
   }}
   .flow-step h3 {{ font-size:14px; margin:0 0 6px; }}
@@ -171,9 +217,12 @@ def render_html(documents: list[dict], today: date) -> str:
 </head>
 <body>
   <header>
-    <h1>QMM Talimat Hatırlatma Sistemi</h1>
-    <div class="subtitle">Kalite Bölümü (QMM) &middot; Çalışma Talimatları Geçerlilik Takibi</div>
-    <div class="meta">Son güncelleme: {today.strftime('%d.%m.%Y')} &middot; Toplam {len(rows_data)} talimat izleniyor</div>
+    <div class="logo-badge">QMM</div>
+    <div>
+      <h1>{DASHBOARD_TITLE}</h1>
+      <div class="subtitle">Kalite Bölümü (QMM) &middot; Çalışma Talimatları Geçerlilik Takibi</div>
+      <div class="meta">Son güncelleme: {today.strftime('%d.%m.%Y')} &middot; Toplam {len(rows_data)} talimat izleniyor</div>
+    </div>
   </header>
 
   <main>
@@ -187,11 +236,9 @@ def render_html(documents: list[dict], today: date) -> str:
       <h2>Talimat Listesi</h2>
       <div class="toolbar">
         <input id="search" type="text" placeholder="Talimat veya bölüm ara...">
-        <select id="dept-filter">
-          <option value="">Tüm bölümler</option>
-          {department_options}
-        </select>
         <button class="reset" id="reset-filters">Filtreleri temizle</button>
+      </div>
+      <div class="dept-chips" id="dept-chips">{dept_chips}
       </div>
       <table id="table">
         <thead>
@@ -248,17 +295,17 @@ def render_html(documents: list[dict], today: date) -> str:
 
   <script>
     const rows = {rows_json};
-    let activeFilter = null;
+    let activeStatus = null;
+    let activeDept = null;
     let sortKey = 'gun';
     let sortAsc = true;
 
     function renderTable() {{
       const q = document.getElementById('search').value.toLocaleLowerCase('tr');
-      const dept = document.getElementById('dept-filter').value;
 
       let filtered = rows.filter(r => {{
-        if (activeFilter && r.label !== activeFilter) return false;
-        if (dept && r.bolum !== dept) return false;
+        if (activeStatus && r.label !== activeStatus) return false;
+        if (activeDept && r.bolum !== activeDept) return false;
         if (q && !(r.talimat.toLocaleLowerCase('tr').includes(q) || r.bolum.toLocaleLowerCase('tr').includes(q))) return false;
         return true;
       }});
@@ -275,7 +322,7 @@ def render_html(documents: list[dict], today: date) -> str:
       tbody.innerHTML = filtered.map(r => `
         <tr>
           <td>${{r.talimat}}</td>
-          <td>${{r.bolum}}</td>
+          <td><span class="dept-pill"><span class="dot" style="background:${{r.bolumRengi}};"></span>${{r.bolum}}</span></td>
           <td>${{r.tarih}}</td>
           <td>${{r.gun}} gün</td>
           <td><span class="pill" style="background:${{r.bg}};color:${{r.fg}};">${{r.label}}</span></td>
@@ -286,25 +333,42 @@ def render_html(documents: list[dict], today: date) -> str:
     }}
 
     document.getElementById('search').addEventListener('input', renderTable);
-    document.getElementById('dept-filter').addEventListener('change', renderTable);
     document.getElementById('reset-filters').addEventListener('click', () => {{
       document.getElementById('search').value = '';
-      document.getElementById('dept-filter').value = '';
-      activeFilter = null;
+      activeStatus = null;
+      activeDept = null;
       document.querySelectorAll('.card').forEach(c => c.classList.remove('active'));
+      document.querySelectorAll('.dept-chip').forEach(c => {{
+        c.classList.remove('active');
+        c.style.background = '#fff';
+      }});
       renderTable();
     }});
 
     document.querySelectorAll('.card').forEach(card => {{
       card.addEventListener('click', () => {{
         const label = card.dataset.filter;
-        if (activeFilter === label) {{
-          activeFilter = null;
-          card.classList.remove('active');
+        activeStatus = (activeStatus === label) ? null : label;
+        document.querySelectorAll('.card').forEach(c => c.classList.remove('active'));
+        if (activeStatus) card.classList.add('active');
+        renderTable();
+      }});
+    }});
+
+    document.querySelectorAll('.dept-chip').forEach(chip => {{
+      chip.addEventListener('click', () => {{
+        const dept = chip.dataset.dept;
+        const color = chip.style.borderColor;
+        document.querySelectorAll('.dept-chip').forEach(c => {{
+          c.classList.remove('active');
+          c.style.background = '#fff';
+        }});
+        if (activeDept === dept) {{
+          activeDept = null;
         }} else {{
-          activeFilter = label;
-          document.querySelectorAll('.card').forEach(c => c.classList.remove('active'));
-          card.classList.add('active');
+          activeDept = dept;
+          chip.classList.add('active');
+          chip.style.background = color;
         }}
         renderTable();
       }});
