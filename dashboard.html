@@ -16,12 +16,15 @@
     display:flex; align-items:flex-start; justify-content:space-between; gap:18px; flex-wrap:wrap;
   }
   .header-left { display:flex; align-items:center; gap:18px; }
-  .logo-badge {
-    /* Gercek Bosch logosu icin: bu div'i <img src="..."> ile degistirin */
-    width:56px; height:56px; border-radius:50%; background:#fff; color:#1a1a1a;
-    display:flex; align-items:center; justify-content:center; font-weight:bold; font-size:14px;
-    flex-shrink:0; letter-spacing:0.02em;
+  .logo-chip {
+    background:#fff; border-radius:10px; padding:10px 16px; display:flex; align-items:center;
+    gap:10px; flex-shrink:0;
   }
+  .logo-chip svg { width:34px; height:34px; flex-shrink:0; }
+  .logo-chip .wordmark {
+    font-weight:900; font-size:20px; letter-spacing:0.01em; color:#EC0016; font-family:Arial, Helvetica, sans-serif;
+  }
+  .header-divider { width:1px; align-self:stretch; background:rgba(255,255,255,.35); }
   header h1 { margin:0; font-size:24px; }
   header .subtitle { color:#f1f1f1; font-size:14px; margin-top:6px; }
   header .meta { color:#e2e2e2; font-size:12px; margin-top:14px; }
@@ -128,7 +131,16 @@
 <body>
   <header>
     <div class="header-left">
-      <div class="logo-badge">QMM</div>
+      <div class="logo-chip">
+        <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="50" cy="50" r="45" fill="none" stroke="#58595B" stroke-width="5"/>
+          <rect x="26" y="18" width="15" height="64" rx="7.5" fill="none" stroke="#58595B" stroke-width="5"/>
+          <rect x="59" y="18" width="15" height="64" rx="7.5" fill="none" stroke="#58595B" stroke-width="5"/>
+          <rect x="30" y="47" width="40" height="6" fill="#58595B"/>
+        </svg>
+        <span class="wordmark">BOSCH</span>
+      </div>
+      <div class="header-divider"></div>
       <div>
         <h1>QMM Talimat Takip Sistemi</h1>
         <div class="subtitle">Kalite Bölümü (QMM) &middot; Çalışma Talimatları Geçerlilik Takibi</div>
