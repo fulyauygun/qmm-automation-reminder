@@ -16,6 +16,7 @@ import smtplib
 from datetime import date, datetime
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+from email.utils import formataddr
 from pathlib import Path
 
 import openpyxl
@@ -92,43 +93,111 @@ def find_due_reminders(documents: list[dict], today: date, sent: set[str]) -> li
     return due
 
 
-def build_email_body(due_items: list[dict], today: date) -> str:
+# Kalan gune gore satirin vurgu rengi (kirmiziya yaklastikca aciliyet artar)
+URGENCY_COLORS = {
+    1: "#dc2626",   # kirmizi
+    7: "#f97316",   # turuncu
+    15: "#eab308",  # sari
+    30: "#2563eb",  # mavi
+}
+
+
+def build_subject(due_items: list[dict], today: date) -> str:
+    base = f"QMM Talimat Geçerlilik Tarihi Hatırlatma - {today.strftime('%d.%m.%Y')} ({len(due_items)} talimat)"
+    if any(item["days_left"] == 1 for item in due_items):
+        urgent_count = sum(1 for item in due_items if item["days_left"] == 1)
+        return f"⚠️ ACİL: {urgent_count} talimatın süresi yarın doluyor - {base}"
+    return base
+
+
+def build_email_text(due_items: list[dict], today: date) -> str:
     lines = [
-        f"Merhaba,",
+        "Merhaba,",
         "",
-        f"{today.strftime('%d.%m.%Y')} tarihi itibariyle asagidaki QMM calisma "
-        "talimatlarinin gecerlilik suresi doluyor. Degisiklik olmamasi durumunda "
+        f"{today.strftime('%d.%m.%Y')} tarihi itibariyle aşağıdaki QMM çalışma "
+        "talimatlarının geçerlilik süresi doluyor. Değişiklik olmaması durumunda "
         "belirtilen tarihe kadar revize edilmesi gerekiyor:",
         "",
     ]
     due_items_sorted = sorted(due_items, key=lambda d: d["days_left"])
     for item in due_items_sorted:
         lines.append(
-            f"- [{item['days_left']} gun kaldi] {item['talimat']} "
-            f"(Bolum: {item['bolum']}, Rev. {item['revizyon_no']}, "
-            f"Son gecerlilik: {item['son_gecerlilik'].strftime('%d.%m.%Y')}, "
-            f"Hazirlayan: {item['hazirlayan']})"
+            f"- [{item['days_left']} gün kaldı] {item['talimat']} "
+            f"(Bölüm: {item['bolum']}, Son geçerlilik: "
+            f"{item['son_gecerlilik'].strftime('%d.%m.%Y')})"
         )
     lines += [
         "",
-        "Bu mail QMM Talimat Hatirlatma otomasyonu tarafindan otomatik olarak "
-        "gonderilmistir.",
+        "Bu mail QMM Talimat Hatırlatma otomasyonu tarafından otomatik olarak "
+        "gönderilmiştir.",
     ]
     return "\n".join(lines)
 
 
-def send_email(subject: str, body: str, recipients: list[str]) -> None:
+def build_email_html(due_items: list[dict], today: date) -> str:
+    due_items_sorted = sorted(due_items, key=lambda d: d["days_left"])
+    rows = []
+    for item in due_items_sorted:
+        color = URGENCY_COLORS.get(item["days_left"], "#2563eb")
+        rows.append(
+            f"""
+            <tr>
+              <td style="padding:10px 12px;border-bottom:1px solid #e5e7eb;">{item['talimat']}</td>
+              <td style="padding:10px 12px;border-bottom:1px solid #e5e7eb;">{item['bolum']}</td>
+              <td style="padding:10px 12px;border-bottom:1px solid #e5e7eb;">{item['son_gecerlilik'].strftime('%d.%m.%Y')}</td>
+              <td style="padding:10px 12px;border-bottom:1px solid #e5e7eb;">
+                <span style="display:inline-block;padding:3px 10px;border-radius:12px;background:{color};color:#ffffff;font-weight:bold;font-size:13px;">
+                  {item['days_left']} gün kaldı
+                </span>
+              </td>
+            </tr>"""
+        )
+
+    return f"""
+    <html>
+      <body style="font-family:Arial,Helvetica,sans-serif;color:#111827;">
+        <p>Merhaba,</p>
+        <p>
+          {today.strftime('%d.%m.%Y')} tarihi itibariyle aşağıdaki QMM çalışma talimatlarının
+          geçerlilik süresi doluyor. Değişiklik olmaması durumunda belirtilen tarihe kadar
+          revize edilmesi gerekiyor:
+        </p>
+        <table style="border-collapse:collapse;width:100%;max-width:720px;border:1px solid #e5e7eb;">
+          <thead>
+            <tr style="background:#f3f4f6;text-align:left;">
+              <th style="padding:10px 12px;">Talimat Adı</th>
+              <th style="padding:10px 12px;">Bölüm</th>
+              <th style="padding:10px 12px;">Son Geçerlilik Tarihi</th>
+              <th style="padding:10px 12px;">Kalan Gün</th>
+            </tr>
+          </thead>
+          <tbody>{"".join(rows)}</tbody>
+        </table>
+        <p style="color:#6b7280;font-size:13px;margin-top:20px;">
+          Bu mail QMM Talimat Hatırlatma otomasyonu tarafından otomatik olarak gönderilmiştir.
+        </p>
+      </body>
+    </html>
+    """
+
+
+def send_email(subject: str, text_body: str, html_body: str, recipients: list[str]) -> None:
     host = os.environ["SMTP_HOST"]
     port = int(os.environ.get("SMTP_PORT", "587"))
     user = os.environ["SMTP_USER"]
     password = os.environ["SMTP_PASSWORD"]
     mail_from = os.environ.get("MAIL_FROM", user)
+    mail_from_name = os.environ.get("MAIL_FROM_NAME", "QMM Talimat Hatırlatma Sistemi")
+    reply_to = os.environ.get("REPLY_TO")
 
-    msg = MIMEMultipart()
-    msg["From"] = mail_from
+    msg = MIMEMultipart("alternative")
+    msg["From"] = formataddr((mail_from_name, mail_from))
     msg["To"] = ", ".join(recipients)
     msg["Subject"] = subject
-    msg.attach(MIMEText(body, "plain", "utf-8"))
+    if reply_to:
+        msg["Reply-To"] = reply_to
+    msg.attach(MIMEText(text_body, "plain", "utf-8"))
+    msg.attach(MIMEText(html_body, "html", "utf-8"))
 
     with smtplib.SMTP(host, port) as server:
         server.starttls()
@@ -161,10 +230,12 @@ def main() -> None:
         print(f"[{today}] Bugun icin hatirlatma gereken talimat yok.")
         return
 
-    body = build_email_body(due_items, today)
-    subject = f"QMM Talimat Hatirlatma - {today.strftime('%d.%m.%Y')} ({len(due_items)} talimat)"
+    text_body = build_email_text(due_items, today)
+    html_body = build_email_html(due_items, today)
+    subject = build_subject(due_items, today)
 
-    print(body)
+    print(f"Konu: {subject}\n")
+    print(text_body)
 
     if args.dry_run:
         print(f"\n[DRY RUN] Mail gonderilmedi. Aliciler: {[r['email'] for r in recipients]}")
@@ -174,7 +245,7 @@ def main() -> None:
         print("Uyari: config/recipients.json icinde alici yok, mail gonderilmedi.")
         return
 
-    send_email(subject, body, [r["email"] for r in recipients])
+    send_email(subject, text_body, html_body, [r["email"] for r in recipients])
 
     for item in due_items:
         sent_state.add(item["state_key"])

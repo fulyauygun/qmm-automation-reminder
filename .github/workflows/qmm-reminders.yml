@@ -39,6 +39,8 @@ jobs:
           SMTP_USER: ${{ secrets.SMTP_USER }}
           SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
           MAIL_FROM: ${{ secrets.MAIL_FROM }}
+          MAIL_FROM_NAME: ${{ secrets.MAIL_FROM_NAME }}
+          REPLY_TO: ${{ secrets.REPLY_TO }}
         run: |
           ARGS=""
           if [ -n "${{ github.event.inputs.date }}" ]; then
@@ -49,14 +51,22 @@ jobs:
           fi
           python scripts/check_reminders.py $ARGS
 
-      - name: Commit updated state (gonderilen hatirlatma kayitlari)
+      - name: Generate dashboard
+        run: |
+          ARGS=""
+          if [ -n "${{ github.event.inputs.date }}" ]; then
+            ARGS="$ARGS --date ${{ github.event.inputs.date }}"
+          fi
+          python scripts/generate_dashboard.py $ARGS
+
+      - name: Commit updated state ve dashboard
         run: |
           git config user.name "qmm-reminder-bot"
           git config user.email "actions@users.noreply.github.com"
-          if ! git diff --quiet -- scripts/state/sent_reminders.json; then
-            git add scripts/state/sent_reminders.json
-            git commit -m "chore: gonderilen hatirlatma kayitlarini guncelle"
+          git add scripts/state/sent_reminders.json dashboard.html
+          if ! git diff --cached --quiet -- scripts/state/sent_reminders.json dashboard.html; then
+            git commit -m "chore: gonderilen hatirlatma kayitlarini ve dashboard'u guncelle"
             git push
           else
-            echo "State degismedi, commit atlanildi."
+            echo "Degisiklik yok, commit atlanildi."
           fi
